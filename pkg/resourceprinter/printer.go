@@ -115,3 +115,26 @@ func PrintClusterInfo(info *version.Info) {
 	}
 	logger.LogSuccess("Cluster version: %s", info.String())
 }
+
+func PrintLimitRanges(limitRanges []v1.LimitRange) {
+	logger.LogSuccess("LimitRanges: %d", len(limitRanges))
+	for _, lr := range limitRanges {
+		for _, limit := range lr.Spec.Limits {
+			logger.LogInfo("  %s/%s type:%s min:%v max:%v", lr.Namespace, lr.Name, limit.Type, limit.Min, limit.Max)
+		}
+	}
+}
+
+func PrintResourceQuotas(resourceQuotas []v1.ResourceQuota) {
+	logger.LogSuccess("ResourceQuotas: %d", len(resourceQuotas))
+	for _, rq := range resourceQuotas {
+		logger.LogInfo("  %s/%s hard:%v used:%v", rq.Namespace, rq.Name, rq.Spec.Hard, rq.Status.Used)
+	}
+}
+
+func PrintNetworkPolicies(networkPolicies []networkingv1.NetworkPolicy) {
+	logger.LogSuccess("NetworkPolicies: %d", len(networkPolicies))
+	for _, np := range networkPolicies {
+		logger.LogInfo("  %s/%s podSelector:%s", np.Namespace, np.Name, np.Spec.PodSelector.String())
+	}
+}

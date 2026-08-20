@@ -14,6 +14,7 @@ import (
 
 var (
 	namespaceFlag string
+	outputFlag    string
 	k8sClient     *kubernetes.Clientset
 	mclientset    *metricsclientset.Clientset
 	ctx           context.Context
@@ -52,6 +53,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&namespaceFlag, "namespace", "n", "", "limit scan to a single namespace (default: whole cluster)")
+	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "text", "Output format: text or json")
 	rootCmd.AddCommand(scanCmd)
 	rootCmd.AddCommand(logsCmd)
 	rootCmd.AddCommand(auditCmd)

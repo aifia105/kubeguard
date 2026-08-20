@@ -26,19 +26,63 @@ func secretFindingBuilder(secret v1.Secret, ruleID string, severity audit.Severi
 	}
 }
 
-// var UnreferencedSecret = audit.Rule{
-// 	RuleID:   "UNREFERENCED_SECRET",
-// 	Severity: audit.SeverityMedium,
-// 	Resource: "Secret",
-// 	Check: func(resource interface{}) []audit.Finding {
-// 		secret := resource.(v1.Secret)
-// 		var findings []audit.Finding
-// 		if secret.Name == "" {
-// 			findings = append(findings, secretFindingBuilder(secret, "UNREFERENCED_SECRET", audit.SeverityMedium, fmt.Sprintf("secret %q is unreferenced", secret.Name)))
-// 		}
-// 		return findings
-// 	},
-// }
+var UnreferencedSecret = audit.Rule{
+	RuleID:   "UNREFERENCED_SECRET",
+	Severity: audit.SeverityMedium,
+	Resource: "Secret",
+	MultiCheck: func(resources []interface{}) []audit.Finding {
+		var findings []audit.Finding
+		if len(resources) != 2 {
+			return findings
+		}
+		secrets, ok1 := resources[0].([]v1.Secret)
+		pods, ok2 := resources[1].([]v1.Pod)
+		if !ok1 || !ok2 {
+			return findings
+		}
+		for _, secret := range secrets {
+			if secret.Type == "helm.sh/release.v1" || secret.Type == v1.SecretTypeServiceAccountToken {
+				continue
+			}
+			referenced := false
+			for _, pod := range pods {
+				if pod.Namespace != secret.Namespace {
+					continue
+				}
+				if secretReferencedByPod(pod, secret.Name) {
+					referenced = true
+					break
+				}
+			}
+			if !referenced {
+				findings = append(findings, secretFindingBuilder(secret, "UNREFERENCED_SECRET", audit.SeverityMedium,
+					fmt.Sprintf("secret %q is not referenced by any pod in its namespace", secret.Name)))
+			}
+		}
+		return findings
+	},
+}
+
+func secretReferencedByPod(pod v1.Pod, secretName string) bool {
+	for _, c := range pod.Spec.Containers {
+		for _, ef := range c.EnvFrom {
+			if ef.SecretRef != nil && ef.SecretRef.Name == secretName {
+				return true
+			}
+		}
+		for _, env := range c.Env {
+			if env.ValueFrom != nil && env.ValueFrom.SecretKeyRef != nil && env.ValueFrom.SecretKeyRef.Name == secretName {
+				return true
+			}
+		}
+	}
+	for _, v := range pod.Spec.Volumes {
+		if v.Secret != nil && v.Secret.SecretName == secretName {
+			return true
+		}
+	}
+	return false
+}
 
 var OldOrStaleSecret = audit.Rule{
 	RuleID:   "OLD_OR_STALE_SECRET",
@@ -87,7 +131,7 @@ var OpaqueSecretStoringConfig = audit.Rule{
 }
 
 var SecretRules = []audit.Rule{
-	// UnreferencedSecret,
+	UnreferencedSecret,
 	OldOrStaleSecret,
 	DefaultTokenTypeOverSupplied,
 	OpaqueSecretStoringConfig,

@@ -19,8 +19,9 @@ type Finding struct {
 }
 
 type Rule struct {
-	RuleID   string
-	Resource string
-	Severity Severity
-	Check    func(resource interface{}) []Finding
+	RuleID     string
+	Resource   string
+	Severity   Severity
+	Check      func(resource interface{}) []Finding
+	MultiCheck func(resources []interface{}) []Finding
 }

@@ -1,12 +1,15 @@
 package cmd
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 
 	"github.com/aifia105/kubeguard/pkg/audit"
+	"github.com/aifia105/kubeguard/pkg/audit/checks"
 	"github.com/aifia105/kubeguard/pkg/audit/registry"
 	"github.com/aifia105/kubeguard/pkg/collectors"
+	"github.com/aifia105/kubeguard/pkg/jsonoutput"
 	"github.com/aifia105/kubeguard/pkg/logger"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
@@ -19,6 +22,13 @@ var serverityRank = map[audit.Severity]int{
 	audit.SeverityHigh:     1,
 	audit.SeverityMedium:   2,
 	audit.SeverityLow:      3,
+}
+
+type auditReport struct {
+	Resource      string                 `json:"resource"`
+	TotalFindings int                    `json:"totalFindings"`
+	Counts        map[audit.Severity]int `json:"counts"`
+	Findings      []audit.Finding        `json:"findings"`
 }
 
 var auditCmd = &cobra.Command{
@@ -42,22 +52,16 @@ func init() {
 		newAuditResourceCmd("nodes", "Node", func(ns string) ([]v1.Node, error) {
 			return collectors.ListNodes(ctx, k8sClient)
 		}),
-		newAuditResourceCmd("namespaces", "Namespace", func(ns string) ([]v1.Namespace, error) {
-			return collectors.ListNamespaces(ctx, k8sClient)
-		}),
-		newAuditResourceCmd("secrets", "Secret", func(ns string) ([]v1.Secret, error) {
-			return collectors.ListSecrets(ctx, k8sClient, ns)
-		}),
-
 		newAuditResourceCmd("deployments", "Deployment", func(ns string) ([]appsv1.Deployment, error) {
 			return collectors.ListDeployments(ctx, k8sClient, ns)
-		}),
-		newAuditResourceCmd("configmaps", "ConfigMap", func(ns string) ([]v1.ConfigMap, error) {
-			return collectors.ListConfigMaps(ctx, k8sClient, ns)
 		}),
 		newAuditResourceCmd("ingresses", "Ingress", func(ns string) ([]networkingv1.Ingress, error) {
 			return collectors.ListIngresses(ctx, k8sClient, ns)
 		}))
+
+	auditCmd.AddCommand(newSecretsAuditCmd())
+	auditCmd.AddCommand(newConfigMapsAuditCmd())
+	auditCmd.AddCommand(newNamespacesAuditCmd())
 }
 
 func newAuditResourceCmd[T any](resourceName string, resourceKey string, collect func(ns string) ([]T, error)) *cobra.Command {
@@ -74,12 +78,103 @@ func newAuditResourceCmd[T any](resourceName string, resourceKey string, collect
 			}
 			rules := registry.GetRulesForResource(resourceKey)
 			findings := audit.RunAudit(results, rules)
-			printFindings(findings, resourceKey)
+			printFindings(findings, resourceName)
+		},
+	}
+}
+
+func newSecretsAuditCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "secrets [namespace]",
+		Short: "Audit secrets",
+		Args:  cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			ns := resolveNamespace(args)
+			secrets, err := collectors.ListSecrets(ctx, k8sClient, ns)
+			if err != nil {
+				logger.LogError("failed to list secrets: %v", err)
+				return
+			}
+			pods, err := collectors.ListPods(ctx, k8sClient, ns)
+			if err != nil {
+				logger.LogError("failed to list pods: %v", err)
+				return
+			}
+
+			findings := audit.RunAudit(secrets, registry.GetRulesForResource("Secret"))
+			findings = append(findings, audit.RunMultiResourceAudit([]interface{}{secrets, pods}, []audit.Rule{checks.UnreferencedSecret})...)
+			printFindings(findings, "secrets")
+		},
+	}
+}
+
+func newConfigMapsAuditCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "configmaps [namespace]",
+		Short: "Audit configmaps",
+		Args:  cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			ns := resolveNamespace(args)
+			configmaps, err := collectors.ListConfigMaps(ctx, k8sClient, ns)
+			if err != nil {
+				logger.LogError("failed to list configmaps: %v", err)
+				return
+			}
+			pods, err := collectors.ListPods(ctx, k8sClient, ns)
+			if err != nil {
+				logger.LogError("failed to list pods: %v", err)
+				return
+			}
+
+			findings := audit.RunAudit(configmaps, registry.GetRulesForResource("ConfigMap"))
+			findings = append(findings, audit.RunMultiResourceAudit([]interface{}{configmaps, pods}, []audit.Rule{checks.UnreferencedConfigMap})...)
+			printFindings(findings, "configmaps")
+		},
+	}
+}
+
+func newNamespacesAuditCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "namespaces [namespace]",
+		Short: "Audit namespaces",
+		Args:  cobra.MaximumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+
+			ns := resolveNamespace(args)
+			namespaces, err := collectors.ListNamespaces(ctx, k8sClient)
+			if ns != "" {
+				var filtered []v1.Namespace
+				for _, n := range namespaces {
+					if n.Name == ns {
+						filtered = append(filtered, n)
+					}
+				}
+				namespaces = filtered
+			}
+			if err != nil {
+				logger.LogError("failed to list namespaces: %v", err)
+				return
+			}
+			networkPolicies, _ := collectors.ListNetworkPolicies(ctx, k8sClient, ns)
+			resourceQuotas, _ := collectors.ListResourceQuotas(ctx, k8sClient, ns)
+			limitRanges, _ := collectors.ListLimitRanges(ctx, k8sClient, ns)
+
+			var findings []audit.Finding
+			findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, networkPolicies}, []audit.Rule{checks.NoDefaultDenyNetworkPolicy})...)
+			findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, resourceQuotas}, []audit.Rule{checks.NoResourceQuotas})...)
+			findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, limitRanges}, []audit.Rule{checks.NoLimitRanges})...)
+
+			printFindings(findings, "namespaces")
 		},
 	}
 }
 
 func printFindings(findings []audit.Finding, resourceName string) {
+	if outputFlag == "json" {
+		writeFindingsJSON(findings, resourceName)
+		return
+	}
+
 	if len(findings) == 0 {
 		logger.LogSuccess("%s: no issues found", resourceName)
 		return
@@ -158,20 +253,44 @@ func runFullAudit(ns string) {
 
 	run("namespaces", func() []audit.Finding {
 		namespaces, err := collectors.ListNamespaces(ctx, k8sClient)
+		if ns != "" {
+			var filtered []v1.Namespace
+			for _, n := range namespaces {
+				if n.Name == ns {
+					filtered = append(filtered, n)
+				}
+			}
+			namespaces = filtered
+		}
 		if err != nil {
 			logger.LogError("failed to collect namespaces: %v", err)
 			return nil
 		}
-		return audit.RunAudit(namespaces, registry.GetRulesForResource("Namespace"))
+		networkPolicies, _ := collectors.ListNetworkPolicies(ctx, k8sClient, ns)
+		resourceQuotas, _ := collectors.ListResourceQuotas(ctx, k8sClient, ns)
+		limitRanges, _ := collectors.ListLimitRanges(ctx, k8sClient, ns)
+
+		var findings []audit.Finding
+		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, networkPolicies}, []audit.Rule{checks.NoDefaultDenyNetworkPolicy})...)
+		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, resourceQuotas}, []audit.Rule{checks.NoResourceQuotas})...)
+		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, limitRanges}, []audit.Rule{checks.NoLimitRanges})...)
+		return findings
 	})
 
 	run("secrets", func() []audit.Finding {
 		secrets, err := collectors.ListSecrets(ctx, k8sClient, ns)
 		if err != nil {
-			logger.LogError("failed to collect secrets: %v", err)
+			logger.LogError("failed to list secrets: %v", err)
 			return nil
 		}
-		return audit.RunAudit(secrets, registry.GetRulesForResource("Secret"))
+		pods, err := collectors.ListPods(ctx, k8sClient, ns)
+		if err != nil {
+			logger.LogError("failed to list pods: %v", err)
+			return nil
+		}
+		findings := audit.RunAudit(secrets, registry.GetRulesForResource("Secret"))
+		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{secrets, pods}, []audit.Rule{checks.UnreferencedSecret})...)
+		return findings
 	})
 
 	run("deployments", func() []audit.Finding {
@@ -189,7 +308,14 @@ func runFullAudit(ns string) {
 			logger.LogError("failed to collect configmaps: %v", err)
 			return nil
 		}
-		return audit.RunAudit(configmaps, registry.GetRulesForResource("ConfigMap"))
+		pods, err := collectors.ListPods(ctx, k8sClient, ns)
+		if err != nil {
+			logger.LogError("failed to list pods: %v", err)
+			return nil
+		}
+		findings := audit.RunAudit(configmaps, registry.GetRulesForResource("ConfigMap"))
+		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{configmaps, pods}, []audit.Rule{checks.UnreferencedConfigMap})...)
+		return findings
 	})
 
 	run("ingresses", func() []audit.Finding {
@@ -206,7 +332,39 @@ func runFullAudit(ns string) {
 
 }
 
+func writeFindingsJSON(findings []audit.Finding, resourceName string) {
+	sortFindingsBySeverity(findings)
+
+	counts := map[audit.Severity]int{}
+	for _, f := range findings {
+		counts[f.Severity]++
+	}
+
+	report := auditReport{
+		Resource:      resourceName,
+		TotalFindings: len(findings),
+		Counts:        counts,
+		Findings:      findings,
+	}
+
+	path := fmt.Sprintf("output/audit_%s_resulat.json", resourceName)
+	if resourceName == "full" {
+		path = "output/audit_resulat.json"
+	}
+
+	if err := jsonoutput.Write(path, report); err != nil {
+		logger.LogFatal("failed to write JSON output: %v", err)
+		return
+	}
+	logger.LogInfo("wrote %s audit results to %s", resourceName, path)
+}
+
 func printFullAuditReport(findings []audit.Finding) {
+	if outputFlag == "json" {
+		writeFindingsJSON(findings, "full")
+		return
+	}
+
 	if len(findings) == 0 {
 		logger.LogSuccess("Full cluster audit: no issues found")
 		return

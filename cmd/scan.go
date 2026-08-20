@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/aifia105/kubeguard/pkg/collectors"
+	"github.com/aifia105/kubeguard/pkg/jsonoutput"
 	"github.com/aifia105/kubeguard/pkg/resourceprinter"
 
 	"github.com/aifia105/kubeguard/pkg/logger"
@@ -26,17 +27,49 @@ var scanCmd = &cobra.Command{
 }
 
 type scanResults struct {
-	cluster      *version.Info
-	nodes        []v1.Node
-	namespaces   []v1.Namespace
-	pods         []v1.Pod
-	events       []v1.Event
-	deployments  []appsv1.Deployment
-	secrets      []v1.Secret
-	services     []v1.Service
-	configmaps   []v1.ConfigMap
-	ingresses    []networkingv1.Ingress
-	nodesMetrics []metricsv1beta1.NodeMetrics
+	Cluster         *version.Info                `json:"cluster,omitempty"`
+	Nodes           []v1.Node                    `json:"nodes,omitempty"`
+	Namespaces      []v1.Namespace               `json:"namespaces,omitempty"`
+	Pods            []v1.Pod                     `json:"pods,omitempty"`
+	Events          []v1.Event                   `json:"events,omitempty"`
+	Deployments     []appsv1.Deployment          `json:"deployments,omitempty"`
+	Secrets         []v1.Secret                  `json:"-"`
+	Services        []v1.Service                 `json:"services,omitempty"`
+	ConfigMaps      []v1.ConfigMap               `json:"configmaps,omitempty"`
+	Ingresses       []networkingv1.Ingress       `json:"ingresses,omitempty"`
+	NodesMetrics    []metricsv1beta1.NodeMetrics `json:"nodeMetrics,omitempty"`
+	LimitRanges     []v1.LimitRange              `json:"limitRanges,omitempty"`
+	ResourceQuotas  []v1.ResourceQuota           `json:"resourceQuotas,omitempty"`
+	NetworkPolicies []networkingv1.NetworkPolicy `json:"networkPolicies,omitempty"`
+}
+
+type scanResultsJSON struct {
+	scanResults
+	SecretsRedacted []secretSummary `json:"secrets,omitempty"`
+}
+
+type secretSummary struct {
+	Name      string   `json:"name"`
+	Namespace string   `json:"namespace"`
+	Type      string   `json:"type"`
+	DataKeys  []string `json:"dataKeys,omitempty"`
+}
+
+func redactSecrets(secrets []v1.Secret) []secretSummary {
+	out := make([]secretSummary, 0, len(secrets))
+	for _, s := range secrets {
+		keys := make([]string, 0, len(s.Data))
+		for k := range s.Data {
+			keys = append(keys, k)
+		}
+		out = append(out, secretSummary{
+			Name:      s.Name,
+			Namespace: s.Namespace,
+			Type:      string(s.Type),
+			DataKeys:  keys,
+		})
+	}
+	return out
 }
 
 func init() {
@@ -66,13 +99,22 @@ func init() {
 			return collectors.ListIngresses(ctx, k8sClient, ns)
 		}),
 		newScanResourceCmd("events", func(ns string) ([]v1.Event, error) {
-			return collectors.ListEvents(ctx, k8sClient, namespaceFlag)
+			return collectors.ListEvents(ctx, k8sClient, ns)
 		}),
 		newScanResourceCmd("metrics", func(ns string) ([]metricsv1beta1.NodeMetrics, error) {
 			return collectors.NodesMetrics(ctx, mclientset)
 		}),
 		newScanResourceCmd("cluster", func(ns string) (*version.Info, error) {
 			return collectors.ClusterInfo(k8sClient)
+		}),
+		newScanResourceCmd("limitranges", func(ns string) ([]v1.LimitRange, error) {
+			return collectors.ListLimitRanges(ctx, k8sClient, ns)
+		}),
+		newScanResourceCmd("resourcequotas", func(ns string) ([]v1.ResourceQuota, error) {
+			return collectors.ListResourceQuotas(ctx, k8sClient, ns)
+		}),
+		newScanResourceCmd("networkpolicies", func(ns string) ([]networkingv1.NetworkPolicy, error) {
+			return collectors.ListNetworkPolicies(ctx, k8sClient, ns)
 		}),
 	)
 }
@@ -87,6 +129,20 @@ func newScanResourceCmd[T any](name string, collect func(ns string) (T, error)) 
 			results, err := collect(ns)
 			if err != nil {
 				logger.LogFatal("failed to collect %s: %v", name, err)
+				return
+			}
+
+			if outputFlag == "json" {
+				path := fmt.Sprintf("output/scan_%s_results.json", name)
+				var payload interface{} = results
+				if secrets, ok := any(results).([]v1.Secret); ok {
+					payload = redactSecrets(secrets)
+				}
+				if err := jsonoutput.Write(path, payload); err != nil {
+					logger.LogFatal("failed to write JSON output: %v", err)
+					return
+				}
+				logger.LogInfo("wrote %s to %s", name, path)
 				return
 			}
 
@@ -119,6 +175,12 @@ func printResults(results interface{}, resourceName string) {
 		resourceprinter.PrintNodeMetrics(results.([]metricsv1beta1.NodeMetrics))
 	case "cluster":
 		resourceprinter.PrintClusterInfo(results.(*version.Info))
+	case "limitranges":
+		resourceprinter.PrintLimitRanges(results.([]v1.LimitRange))
+	case "resourcequotas":
+		resourceprinter.PrintResourceQuotas(results.([]v1.ResourceQuota))
+	case "networkpolicies":
+		resourceprinter.PrintNetworkPolicies(results.([]networkingv1.NetworkPolicy))
 	}
 }
 
@@ -135,108 +197,134 @@ func runFullScan(namespace string) {
 		}()
 	}
 
-	// cluster
 	run(func() {
 		cluster, err := collectors.ClusterInfo(k8sClient)
 		if err != nil {
 			logger.LogError("failed to get cluster info: %v", err)
 		}
-		results.cluster = cluster
+		results.Cluster = cluster
 	})
-	// nodes
 	run(func() {
 		nodes, err := collectors.ListNodes(ctx, k8sClient)
 		if err != nil {
 			logger.LogError("failed to list nodes: %v", err)
 		}
-		results.nodes = nodes
+		results.Nodes = nodes
 	})
-	// namespaces
 	run(func() {
 		namespaces, err := collectors.ListNamespaces(ctx, k8sClient)
 		if err != nil {
 			logger.LogError("failed to list namespaces: %v", err)
 		}
-		results.namespaces = namespaces
+		results.Namespaces = namespaces
 	})
-	// pods
 	run(func() {
 		pods, err := collectors.ListPods(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list pods: %v", err)
 		}
-		results.pods = pods
+		results.Pods = pods
 	})
-	// events
 	run(func() {
 		events, err := collectors.ListEvents(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list events: %v", err)
 		}
-		results.events = events
+		results.Events = events
 	})
-	// deployments
 	run(func() {
 		deployments, err := collectors.ListDeployments(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list deployments: %v", err)
 		}
-		results.deployments = deployments
+		results.Deployments = deployments
 	})
-	// secrets
 	run(func() {
 		secrets, err := collectors.ListSecrets(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list secrets: %v", err)
 		}
-		results.secrets = secrets
+		results.Secrets = secrets
 	})
-	// services
 	run(func() {
 		services, err := collectors.ListServices(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list services: %v", err)
 		}
-		results.services = services
+		results.Services = services
 	})
-	// configmaps
 	run(func() {
 		configmaps, err := collectors.ListConfigMaps(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list configmaps: %v", err)
 		}
-		results.configmaps = configmaps
+		results.ConfigMaps = configmaps
 	})
-	// ingresses
 	run(func() {
 		ingresses, err := collectors.ListIngresses(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list ingresses: %v", err)
 		}
-		results.ingresses = ingresses
+		results.Ingresses = ingresses
 	})
-	// node metrics
 	run(func() {
 		nodesMetrics, err := collectors.NodesMetrics(ctx, mclientset)
 		if err != nil {
 			logger.LogError("failed to list node metrics: %v", err)
 		}
-		results.nodesMetrics = nodesMetrics
+		results.NodesMetrics = nodesMetrics
+	})
+	run(func() {
+		limitRanges, err := collectors.ListLimitRanges(ctx, k8sClient, namespace)
+		if err != nil {
+			logger.LogError("failed to list limit ranges: %v", err)
+		}
+		results.LimitRanges = limitRanges
+	})
+	run(func() {
+		resourceQuotas, err := collectors.ListResourceQuotas(ctx, k8sClient, namespace)
+		if err != nil {
+			logger.LogError("failed to list resource quotas: %v", err)
+		}
+		results.ResourceQuotas = resourceQuotas
+	})
+	run(func() {
+		networkPolicies, err := collectors.ListNetworkPolicies(ctx, k8sClient, namespace)
+		if err != nil {
+			logger.LogError("failed to list network policies: %v", err)
+		}
+		results.NetworkPolicies = networkPolicies
 	})
 
 	wg.Wait()
 
-	fmt.Println("")
-	printResults(results.cluster, "cluster")
-	printResults(results.nodes, "nodes")
-	printResults(results.namespaces, "namespaces")
-	printResults(results.pods, "pods")
-	printResults(results.events, "events")
-	printResults(results.deployments, "deployments")
-	printResults(results.secrets, "secrets")
-	printResults(results.services, "services")
-	printResults(results.configmaps, "configmaps")
-	printResults(results.ingresses, "ingresses")
-	printResults(results.nodesMetrics, "metrics")
+	if outputFlag == "json" {
+		path := "output/scan_resulat.json"
+		payload := scanResultsJSON{
+			scanResults:     results,
+			SecretsRedacted: redactSecrets(results.Secrets),
+		}
+		if err := jsonoutput.Write(path, payload); err != nil {
+			logger.LogFatal("failed to write JSON output: %v", err)
+			return
+		}
+		logger.LogInfo("wrote full scan results to %s", path)
+		return
+	}
 
+	fmt.Println("")
+	printResults(results.Cluster, "cluster")
+	printResults(results.Nodes, "nodes")
+	printResults(results.Namespaces, "namespaces")
+	printResults(results.Pods, "pods")
+	printResults(results.Events, "events")
+	printResults(results.Deployments, "deployments")
+	printResults(results.Secrets, "secrets")
+	printResults(results.Services, "services")
+	printResults(results.ConfigMaps, "configmaps")
+	printResults(results.Ingresses, "ingresses")
+	printResults(results.NodesMetrics, "metrics")
+	printResults(results.LimitRanges, "limitranges")
+	printResults(results.ResourceQuotas, "resourcequotas")
+	printResults(results.NetworkPolicies, "networkpolicies")
 }

@@ -16,6 +16,7 @@ func buildRegistry() []audit.Rule {
 	rules = append(rules, checks.DeploymentRules...)
 	rules = append(rules, checks.ConfigMapRules...)
 	rules = append(rules, checks.NodeRules...)
+	rules = append(rules, checks.NamespaceRules...)
 	return rules
 }
 
