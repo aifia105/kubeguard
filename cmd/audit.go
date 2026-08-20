@@ -347,9 +347,9 @@ func writeFindingsJSON(findings []audit.Finding, resourceName string) {
 		Findings:      findings,
 	}
 
-	path := fmt.Sprintf("output/audit_%s_resulat.json", resourceName)
+	path := fmt.Sprintf("output/audit_%s_results.json", resourceName)
 	if resourceName == "full" {
-		path = "output/audit_resulat.json"
+		path = "output/audit_results.json"
 	}
 
 	if err := jsonoutput.Write(path, report); err != nil {
