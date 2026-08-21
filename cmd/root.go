@@ -57,6 +57,7 @@ func init() {
 	rootCmd.AddCommand(scanCmd)
 	rootCmd.AddCommand(logsCmd)
 	rootCmd.AddCommand(auditCmd)
+	rootCmd.AddCommand(diagnoseCmd)
 }
 
 func resolveNamespace(args []string) string {
