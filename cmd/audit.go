@@ -205,15 +205,14 @@ func sortFindingsBySeverity(findings []audit.Finding) {
 	})
 }
 
-func runFullAudit(ns string) {
-	logger.LogInfo("Running full cluster audit...")
+func CollectFullAuditFindings(namespace string) []audit.Finding {
 	var (
 		mu          sync.Mutex
 		wg          sync.WaitGroup
 		allFindings []audit.Finding
 	)
 
-	run := func(resouceName string, fn func() []audit.Finding) {
+	run := func(fn func() []audit.Finding) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -224,25 +223,23 @@ func runFullAudit(ns string) {
 		}()
 	}
 
-	run("pods", func() []audit.Finding {
-		pods, err := collectors.ListPods(ctx, k8sClient, ns)
+	run(func() []audit.Finding {
+		pods, err := collectors.ListPods(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to collect pods: %v", err)
 			return nil
 		}
 		return audit.RunAudit(pods, registry.GetRulesForResource("Pod"))
 	})
-
-	run("services", func() []audit.Finding {
-		services, err := collectors.ListServices(ctx, k8sClient, ns)
+	run(func() []audit.Finding {
+		services, err := collectors.ListServices(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to collect services: %v", err)
 			return nil
 		}
 		return audit.RunAudit(services, registry.GetRulesForResource("Service"))
 	})
-
-	run("nodes", func() []audit.Finding {
+	run(func() []audit.Finding {
 		nodes, err := collectors.ListNodes(ctx, k8sClient)
 		if err != nil {
 			logger.LogError("failed to collect nodes: %v", err)
@@ -250,40 +247,29 @@ func runFullAudit(ns string) {
 		}
 		return audit.RunAudit(nodes, registry.GetRulesForResource("Node"))
 	})
-
-	run("namespaces", func() []audit.Finding {
-		namespaces, err := collectors.ListNamespaces(ctx, k8sClient)
-		if ns != "" {
-			var filtered []v1.Namespace
-			for _, n := range namespaces {
-				if n.Name == ns {
-					filtered = append(filtered, n)
-				}
-			}
-			namespaces = filtered
-		}
+	run(func() []audit.Finding {
+		deployments, err := collectors.ListDeployments(ctx, k8sClient, namespace)
 		if err != nil {
-			logger.LogError("failed to collect namespaces: %v", err)
+			logger.LogError("failed to collect deployments: %v", err)
 			return nil
 		}
-		networkPolicies, _ := collectors.ListNetworkPolicies(ctx, k8sClient, ns)
-		resourceQuotas, _ := collectors.ListResourceQuotas(ctx, k8sClient, ns)
-		limitRanges, _ := collectors.ListLimitRanges(ctx, k8sClient, ns)
-
-		var findings []audit.Finding
-		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, networkPolicies}, []audit.Rule{checks.NoDefaultDenyNetworkPolicy})...)
-		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, resourceQuotas}, []audit.Rule{checks.NoResourceQuotas})...)
-		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, limitRanges}, []audit.Rule{checks.NoLimitRanges})...)
-		return findings
+		return audit.RunAudit(deployments, registry.GetRulesForResource("Deployment"))
 	})
-
-	run("secrets", func() []audit.Finding {
-		secrets, err := collectors.ListSecrets(ctx, k8sClient, ns)
+	run(func() []audit.Finding {
+		ingresses, err := collectors.ListIngresses(ctx, k8sClient, namespace)
+		if err != nil {
+			logger.LogError("failed to collect ingresses: %v", err)
+			return nil
+		}
+		return audit.RunAudit(ingresses, registry.GetRulesForResource("Ingress"))
+	})
+	run(func() []audit.Finding {
+		secrets, err := collectors.ListSecrets(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list secrets: %v", err)
 			return nil
 		}
-		pods, err := collectors.ListPods(ctx, k8sClient, ns)
+		pods, err := collectors.ListPods(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list pods: %v", err)
 			return nil
@@ -292,23 +278,13 @@ func runFullAudit(ns string) {
 		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{secrets, pods}, []audit.Rule{checks.UnreferencedSecret})...)
 		return findings
 	})
-
-	run("deployments", func() []audit.Finding {
-		deployments, err := collectors.ListDeployments(ctx, k8sClient, ns)
-		if err != nil {
-			logger.LogError("failed to collect deployments: %v", err)
-			return nil
-		}
-		return audit.RunAudit(deployments, registry.GetRulesForResource("Deployment"))
-	})
-
-	run("configmaps", func() []audit.Finding {
-		configmaps, err := collectors.ListConfigMaps(ctx, k8sClient, ns)
+	run(func() []audit.Finding {
+		configmaps, err := collectors.ListConfigMaps(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to collect configmaps: %v", err)
 			return nil
 		}
-		pods, err := collectors.ListPods(ctx, k8sClient, ns)
+		pods, err := collectors.ListPods(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list pods: %v", err)
 			return nil
@@ -317,17 +293,40 @@ func runFullAudit(ns string) {
 		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{configmaps, pods}, []audit.Rule{checks.UnreferencedConfigMap})...)
 		return findings
 	})
-
-	run("ingresses", func() []audit.Finding {
-		ingresses, err := collectors.ListIngresses(ctx, k8sClient, ns)
+	run(func() []audit.Finding {
+		namespaces, err := collectors.ListNamespaces(ctx, k8sClient)
 		if err != nil {
-			logger.LogError("failed to collect ingresses: %v", err)
+			logger.LogError("failed to collect namespaces: %v", err)
 			return nil
 		}
-		return audit.RunAudit(ingresses, registry.GetRulesForResource("Ingress"))
+		if namespace != "" {
+			var filtered []v1.Namespace
+			for _, n := range namespaces {
+				if n.Name == namespace {
+					filtered = append(filtered, n)
+				}
+			}
+			namespaces = filtered
+		}
+		networkPolicies, _ := collectors.ListNetworkPolicies(ctx, k8sClient, namespace)
+		resourceQuotas, _ := collectors.ListResourceQuotas(ctx, k8sClient, namespace)
+		limitRanges, _ := collectors.ListLimitRanges(ctx, k8sClient, namespace)
+
+		var findings []audit.Finding
+		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, networkPolicies}, []audit.Rule{checks.NoDefaultDenyNetworkPolicy})...)
+		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, resourceQuotas}, []audit.Rule{checks.NoResourceQuotas})...)
+		findings = append(findings, audit.RunMultiResourceAudit([]interface{}{namespaces, limitRanges}, []audit.Rule{checks.NoLimitRanges})...)
+		return findings
 	})
 
 	wg.Wait()
+	return allFindings
+}
+
+func runFullAudit(ns string) {
+	logger.LogInfo("Running full cluster audit...")
+
+	allFindings := CollectFullAuditFindings(ns)
 	printFullAuditReport(allFindings)
 
 }

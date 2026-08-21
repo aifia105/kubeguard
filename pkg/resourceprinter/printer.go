@@ -5,6 +5,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/version"
 	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
@@ -136,5 +137,17 @@ func PrintNetworkPolicies(networkPolicies []networkingv1.NetworkPolicy) {
 	logger.LogSuccess("NetworkPolicies: %d", len(networkPolicies))
 	for _, np := range networkPolicies {
 		logger.LogInfo("  %s/%s podSelector:%s", np.Namespace, np.Name, np.Spec.PodSelector.String())
+	}
+}
+
+func PrintPodMetrics(metrics []metricsv1beta1.PodMetrics) {
+	logger.LogSuccess("Pod Metrics: %d", len(metrics))
+	for _, m := range metrics {
+		var cpuUsage, memUsage resource.Quantity
+		for _, container := range m.Containers {
+			cpuUsage.Add(*container.Usage.Cpu())
+			memUsage.Add(*container.Usage.Memory())
+		}
+		logger.LogInfo("  %s/%s CPU:%s Memory:%s", m.Namespace, m.Name, cpuUsage, memUsage)
 	}
 }

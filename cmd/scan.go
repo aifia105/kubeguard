@@ -41,6 +41,7 @@ type scanResults struct {
 	LimitRanges     []v1.LimitRange              `json:"limitRanges,omitempty"`
 	ResourceQuotas  []v1.ResourceQuota           `json:"resourceQuotas,omitempty"`
 	NetworkPolicies []networkingv1.NetworkPolicy `json:"networkPolicies,omitempty"`
+	PodsMetrics     []metricsv1beta1.PodMetrics  `json:"podMetrics,omitempty"`
 }
 
 type scanResultsJSON struct {
@@ -116,6 +117,9 @@ func init() {
 		newScanResourceCmd("networkpolicies", func(ns string) ([]networkingv1.NetworkPolicy, error) {
 			return collectors.ListNetworkPolicies(ctx, k8sClient, ns)
 		}),
+		newScanResourceCmd("podsmetrics", func(ns string) ([]metricsv1beta1.PodMetrics, error) {
+			return collectors.ListPodsMetrics(ctx, mclientset, ns)
+		}),
 	)
 }
 
@@ -181,6 +185,8 @@ func printResults(results interface{}, resourceName string) {
 		resourceprinter.PrintResourceQuotas(results.([]v1.ResourceQuota))
 	case "networkpolicies":
 		resourceprinter.PrintNetworkPolicies(results.([]networkingv1.NetworkPolicy))
+	case "podsmetrics":
+		resourceprinter.PrintPodMetrics(results.([]metricsv1beta1.PodMetrics))
 	}
 }
 
@@ -295,11 +301,18 @@ func runFullScan(namespace string) {
 		}
 		results.NetworkPolicies = networkPolicies
 	})
+	run(func() {
+		podsMetrics, err := collectors.ListPodsMetrics(ctx, mclientset, namespace)
+		if err != nil {
+			logger.LogError("failed to list pod metrics: %v", err)
+		}
+		results.PodsMetrics = podsMetrics
+	})
 
 	wg.Wait()
 
 	if outputFlag == "json" {
-		path := "output/scan_resulat.json"
+		path := "output/scan_results.json"
 		payload := scanResultsJSON{
 			scanResults:     results,
 			SecretsRedacted: redactSecrets(results.Secrets),
@@ -327,4 +340,5 @@ func runFullScan(namespace string) {
 	printResults(results.LimitRanges, "limitranges")
 	printResults(results.ResourceQuotas, "resourcequotas")
 	printResults(results.NetworkPolicies, "networkpolicies")
+	printResults(results.PodsMetrics, "podsmetrics")
 }
