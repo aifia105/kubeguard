@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/aifia105/kubeguard/pkg/collectors"
 	"github.com/aifia105/kubeguard/pkg/evidence"
 	"github.com/aifia105/kubeguard/pkg/jsonoutput"
@@ -59,4 +62,11 @@ func runDiagnose(namespace string) {
 
 	logger.LogSuccess("Evidence bundle ready: %d finding(s), %d pod(s) of interest, %d warning event(s), %d log excerpt(s)",
 		snapshot.Summary.Total, len(snapshot.Pods), len(snapshot.Events), len(snapshot.Logs))
+
+	evidenceJSON, err := json.MarshalIndent(snapshot, "", "  ")
+	if err != nil {
+		logger.LogError("failed to marshal evidence snapshot: %v", err)
+		return
+	}
+	fmt.Println(string(evidenceJSON))
 }
