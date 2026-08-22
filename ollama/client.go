@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -33,7 +34,7 @@ func (c *Client) Chat(ctx context.Context, evidence []byte) (string, error) {
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: string(evidence)},
 		},
-		Stream: true,
+		Stream: false,
 	}
 	body, err := json.Marshal(requestBody)
 	if err != nil {
@@ -51,6 +52,10 @@ func (c *Client) Chat(ctx context.Context, evidence []byte) (string, error) {
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
 		responseBody, _ := io.ReadAll(response.Body)
+
+		if response.StatusCode == http.StatusNotFound || strings.Contains(string(responseBody), "not found") {
+			return "", fmt.Errorf("model %q is not pulled yet — run: ollama pull %s", c.model, c.model)
+		}
 		return "", fmt.Errorf("ollama returned status %d: %s", response.StatusCode, string(responseBody))
 	}
 
