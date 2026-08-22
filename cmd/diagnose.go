@@ -17,7 +17,7 @@ var diagnoseCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ns := resolveNamespace(args)
-		runDiagnose(ns)
+		RunDiagnose(ns)
 	},
 }
 
@@ -25,7 +25,7 @@ func init() {
 	rootCmd.AddCommand(diagnoseCmd)
 }
 
-func runDiagnose(namespace string) {
+func RunDiagnose(namespace string) {
 	logger.LogInfo("Running full audit for evidence...")
 	findings := CollectFullAuditFindings(namespace)
 
