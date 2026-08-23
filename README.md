@@ -47,10 +47,10 @@ KubeGuard connects to a Kubernetes cluster to inspect resources, collect logs an
                        Diagnosis
 
 ## Tech Stack
-Go
-Kubernetes / client-go
-Ollama
-Llama
+- Go
+- Kubernetes / client-go
+- Ollama
+- Llama
 
 ## Usage
 ```bash 
