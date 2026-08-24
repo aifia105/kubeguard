@@ -105,7 +105,7 @@ Diagnose command:
 kubeguard diagnose
 ...
 diagnose analyze:
-kubeguard analyze --model <ollamaModel>
+kubeguard analyze --model llama3
 ```
 
 ### Example: scan → audit → diagnose → analyze
@@ -129,7 +129,7 @@ kubeguard diagnose --namespace production
 
 # 5. Run AI-powered analysis on the diagnosis to get a plain-English explanation
 #    and recommended remediation steps
-kubeguard analyze
+kubeguard analyze --model llama3
 ```
 
 Each step feeds evidence into the next: `scan` builds the resource inventory, `audit` flags misconfigurations against that inventory, `logs`/`diagnose` gather and correlate runtime evidence, and `analyze` hands the validated evidence to the LLM for reasoning — so the AI is only ever reasoning over facts KubeGuard has already verified.
