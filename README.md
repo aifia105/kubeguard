@@ -105,7 +105,7 @@ Diagnose command:
 kubeguard diagnose
 ...
 diagnose analyze:
-kubeguard analyze
+kubeguard analyze --model <ollamaModel>
 ```
 
 ### Example: scan → audit → diagnose → analyze
