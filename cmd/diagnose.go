@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/aifia105/kubeguard/pkg/collectors"
+	"github.com/aifia105/kubeguard/pkg/db"
 	"github.com/aifia105/kubeguard/pkg/evidence"
 	"github.com/aifia105/kubeguard/pkg/jsonoutput"
 	"github.com/aifia105/kubeguard/pkg/logger"
@@ -29,6 +30,9 @@ func RunDiagnose(namespace string) {
 	logger.LogInfo("Running full audit for evidence...")
 	findings := CollectFullAuditFindings(namespace)
 
+	runID := db.GenerateUUID()
+	persistRun(runID, "diagnose", namespace, findings)
+
 	logger.LogInfo("Gathering pod status, container status, and events...")
 	pods, err := collectors.ListPods(ctx, k8sClient, namespace)
 	if err != nil {
@@ -48,7 +52,9 @@ func RunDiagnose(namespace string) {
 		clusterName = cluster.GitVersion
 	}
 
-	snapshot := evidence.BuildSnapshot(ctx, k8sClient, mclientset, namespace, clusterName, findings, pods, events)
+	snapshot := evidence.BuildSnapshot(ctx, k8sClient, mclientset, runID, namespace, clusterName, findings, pods, events)
+
+	persistRun(runID, "diagnose", namespace, findings)
 
 	if outputFlag == "json" {
 		path := "output/diagnose_results.json"

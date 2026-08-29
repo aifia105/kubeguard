@@ -2,16 +2,20 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 
 	"github.com/aifia105/kubeguard/ollama"
+	"github.com/aifia105/kubeguard/pkg/db"
 	"github.com/aifia105/kubeguard/pkg/logger"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
 var (
-	analyzeModel string
-	analyzePath  string
+	analyzeModel    string
+	analyzePath     string
+	analyzeSaveToDB bool
 )
 
 var analyzeCmd = &cobra.Command{
@@ -26,6 +30,7 @@ var analyzeCmd = &cobra.Command{
 func init() {
 	analyzeCmd.Flags().StringVar(&analyzeModel, "model", "phi3", "Ollama model to use")
 	analyzeCmd.Flags().StringVar(&analyzePath, "file", "output/diagnose_results.json", "path to the evidence bundle JSON file")
+	analyzeCmd.Flags().BoolVar(&analyzeSaveToDB, "save", false, "save the diagnosis result to the database")
 	rootCmd.AddCommand(analyzeCmd)
 }
 
@@ -45,4 +50,34 @@ func runAnalyze() {
 	}
 
 	logger.LogInfo("Analysis result: %s", result)
+
+	if !analyzeSaveToDB {
+		return
+	}
+	if db.Pool == nil {
+		logger.LogWarning("database unavailable — diagnosis not saved")
+		return
+	}
+
+	var snap struct {
+		RunID uuid.UUID `json:"runId"`
+	}
+	if err := json.Unmarshal(evidence, &snap); err != nil || snap.RunID == uuid.Nil {
+		logger.LogWarning("evidence bundle has no run_id — diagnosis not saved. Regenerate it with a current `kubeguard diagnose`")
+		return
+	}
+
+	diagnosis := db.Diagnosis{
+		ID:               db.GenerateUUID(),
+		RunID:            snap.RunID,
+		Model:            analyzeModel,
+		ResponseText:     result,
+		EvidenceSnapshot: evidence,
+	}
+	if _, err := db.InsertDiagnosis(ctx, db.Pool, diagnosis); err != nil {
+		if db.IsSchemaNotExist(err) {
+			logger.LogWarning("the run this diagnosis belongs to was never saved; re-run kubeguard diagnose with the database available")
+			return
+		}
+	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/aifia105/kubeguard/pkg/audit"
 	"github.com/aifia105/kubeguard/pkg/collectors"
+	"github.com/google/uuid"
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,8 +28,9 @@ type PodResourceData struct {
 	MemUsage   resource.Quantity
 }
 
-func BuildSnapshot(ctx context.Context, clientset *kubernetes.Clientset, mclientset *metricsclientset.Clientset, namespace, clusterName string, findings []audit.Finding, pods []corev1.Pod, events []corev1.Event) *EvidenceSnapshot {
+func BuildSnapshot(ctx context.Context, clientset *kubernetes.Clientset, mclientset *metricsclientset.Clientset, runID uuid.UUID, namespace, clusterName string, findings []audit.Finding, pods []corev1.Pod, events []corev1.Event) *EvidenceSnapshot {
 	snapshot := &EvidenceSnapshot{
+		RunID:       runID,
 		GeneratedAt: time.Now(),
 		ClusterName: clusterName,
 		Scope:       scopeLabel(namespace),

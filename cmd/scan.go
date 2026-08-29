@@ -311,6 +311,8 @@ func runFullScan(namespace string) {
 
 	wg.Wait()
 
+	persistScan(namespace, results)
+
 	if outputFlag == "json" {
 		path := "output/scan_results.json"
 		payload := scanResultsJSON{
@@ -341,4 +343,5 @@ func runFullScan(namespace string) {
 	printResults(results.ResourceQuotas, "resourcequotas")
 	printResults(results.NetworkPolicies, "networkpolicies")
 	printResults(results.PodsMetrics, "podsmetrics")
+
 }

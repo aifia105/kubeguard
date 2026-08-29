@@ -4,9 +4,11 @@ import (
 	"time"
 
 	"github.com/aifia105/kubeguard/pkg/audit"
+	"github.com/google/uuid"
 )
 
 type EvidenceSnapshot struct {
+	RunID       uuid.UUID `json:"runId,omitempty"`
 	GeneratedAt time.Time `json:"generatedAt"`
 	ClusterName string    `json:"clusterName,omitempty"`
 	Scope       string    `json:"scope,omitempty"`

@@ -5,8 +5,11 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/aifia105/kubeguard/pkg/db"
 	"github.com/aifia105/kubeguard/pkg/k8sclient"
 	"github.com/aifia105/kubeguard/pkg/logger"
+	"github.com/google/uuid"
+
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
@@ -15,9 +18,11 @@ import (
 var (
 	namespaceFlag string
 	outputFlag    string
+	noSaveFlag    bool
 	k8sClient     *kubernetes.Clientset
 	mclientset    *metricsclientset.Clientset
 	ctx           context.Context
+	clusterID     uuid.UUID
 )
 
 var rootCmd = &cobra.Command{
@@ -29,6 +34,19 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			logger.LogFatal("failed to create Kubernetes client: %v", err)
 			return err
+		}
+		if err := db.InitPool(ctx); err != nil {
+			logger.LogWarning("database unavailable, results will not be persisted: %v", err)
+		}
+
+		if db.Pool != nil {
+			clusterName := k8sclient.CurrentKubeContextName()
+			c, err := db.GetOrCreateCluster(ctx, db.Pool, clusterName)
+			if err != nil {
+				logger.LogWarning("failed to resolve cluster record: %v", err)
+			} else {
+				clusterID = c.ID
+			}
 		}
 		return nil
 	},
@@ -54,6 +72,7 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&namespaceFlag, "namespace", "n", "", "limit scan to a single namespace (default: whole cluster)")
 	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "text", "Output format: text or json")
+	rootCmd.PersistentFlags().BoolVar(&noSaveFlag, "no-save", false, "skip persisting results to the database")
 	rootCmd.AddCommand(scanCmd)
 	rootCmd.AddCommand(logsCmd)
 	rootCmd.AddCommand(auditCmd)

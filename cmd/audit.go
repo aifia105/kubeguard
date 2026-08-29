@@ -79,6 +79,7 @@ func newAuditResourceCmd[T any](resourceName string, resourceKey string, collect
 			rules := registry.GetRulesForResource(resourceKey)
 			findings := audit.RunAudit(results, rules)
 			printFindings(findings, resourceName)
+			persistRun(clusterID, "audit", ns, findings)
 		},
 	}
 }
@@ -328,6 +329,7 @@ func runFullAudit(ns string) {
 
 	allFindings := CollectFullAuditFindings(ns)
 	printFullAuditReport(allFindings)
+	persistRun(clusterID, "audit", ns, allFindings)
 
 }
 

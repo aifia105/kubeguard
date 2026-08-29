@@ -1,0 +1,49 @@
+package db
+
+import (
+	"context"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+type Finding struct {
+	ID          uuid.UUID `db:"id"`
+	RunID       uuid.UUID `db:"run_id"`
+	Namespace   string    `db:"namespace"`
+	Name        string    `db:"name"`
+	Resource    string    `db:"resource"`
+	RuleID      string    `db:"rule_id"`
+	Severity    string    `db:"severity"`
+	Description string    `db:"description"`
+}
+
+func InsertFinding(ctx context.Context, pool *pgxpool.Pool, f Finding) (uuid.UUID, error) {
+	f.ID = GenerateUUID()
+	_, err := pool.Exec(ctx, "INSERT INTO findings (id, run_id, namespace, name, resource, rule_id, severity, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", f.ID, f.RunID, f.Namespace, f.Name, f.Resource, f.RuleID, f.Severity, f.Description)
+	return f.ID, err
+}
+func GetAllFindings(ctx context.Context, pool *pgxpool.Pool) (findings []Finding, err error) {
+	rows, err := pool.Query(ctx, "SELECT * FROM findings")
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowToStructByName[Finding])
+}
+
+func GetFindingByID(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (f Finding, err error) {
+	rows, err := pool.Query(ctx, "SELECT * FROM findings WHERE id=$1", id)
+	if err != nil {
+		return Finding{}, err
+	}
+	return pgx.CollectOneRow(rows, pgx.RowToStructByName[Finding])
+}
+
+func GetFindingsByRunID(ctx context.Context, pool *pgxpool.Pool, runID uuid.UUID) (findings []Finding, err error) {
+	rows, err := pool.Query(ctx, "SELECT * FROM findings WHERE run_id=$1", runID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowToStructByName[Finding])
+}

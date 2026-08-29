@@ -37,3 +37,11 @@ func NewK8sClient() (*kubernetes.Clientset, *metricsclientset.Clientset, error) 
 
 	return clientset, mclientset, nil
 }
+
+func CurrentKubeContextName() string {
+	config, err := clientcmd.NewDefaultClientConfigLoadingRules().Load()
+	if err != nil {
+		logger.LogFatal("failed to load kubeconfig: %v", err)
+	}
+	return config.CurrentContext
+}
