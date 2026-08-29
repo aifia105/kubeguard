@@ -129,11 +129,11 @@ kubeguard db migrate-up
 
 ### Global Flags
 
-| Flag | Short | Description | Default |
-|------|-------|-------------|---------|
-| `--namespace` | `-n` | Scope operation to a specific namespace | All namespaces |
-| `--output` | `-o` | Output format (`text` or `json`) | `text` |
-| `--no-save` | | Skip persisting results to the database | `false` |
+| Flag          | Short | Description                             | Default        |
+| ------------- | ----- | --------------------------------------- | -------------- |
+| `--namespace` | `-n`  | Scope operation to a specific namespace | All namespaces |
+| `--output`    | `-o`  | Output format (`text` or `json`)        | `text`         |
+| `--no-save`   |       | Skip persisting results to the database | `false`        |
 
 ---
 
@@ -188,36 +188,36 @@ kubeguard audit -o json
 
 #### Security Audit Checks Included:
 
-| Resource | Rule ID | Severity | Description |
-|----------|---------|----------|-------------|
-| **Pod** | `PRIVILEGED_CONTAINER` | `HIGH` | Containers running with privileged access |
-| **Pod** | `RUNNING_AS_ROOT` | `HIGH` | Containers running as root user (UID 0 or non-root false) |
-| **Pod** | `PRIVILEGE_ESCALATION_ALLOWED` | `HIGH` | Containers allowing privilege escalation |
-| **Pod** | `WRITABLE_ROOT_FILESYSTEM` | `HIGH` | Root filesystem is writable |
-| **Pod** | `DANGEROUS_CAPABILITIES_KEPT` | `HIGH` | Retaining capabilities like `NET_ADMIN`, `SYS_ADMIN`, etc. |
-| **Pod** | `HOST_NAMESPACES_SHARED` | `HIGH` | Pod sharing HostNetwork, HostPID, or HostIPC |
-| **Pod** | `SENSITIVE_HOST_PATH_MOUNTED` | `HIGH` | Mounting sensitive host paths (`/var/run/docker.sock`, `/etc`, `/`, etc.) |
-| **Pod** | `ENV_VARS_WITH_PLAINTEXT_SECRETS` | `HIGH` | Sensitive variable names defined in plaintext |
-| **Pod** | `DEFAULT_SA_AUTO_MOUNTED` | `MEDIUM` | Automounted service account token on default SA |
-| **Pod** | `NO_RESOURCE_LIMITS` / `REQUESTS` | `MEDIUM` | Missing resource limits or requests |
-| **Pod** | `LATEST_IMAGE_TAG` | `MEDIUM` | Container image using `:latest` or missing tag |
-| **Pod** | `NO_SECCOMP_PROFILE` / `NO_APP_ARMOR_PROFILE` | `MEDIUM` | Missing security profiles |
-| **Pod** | `NO_LIVENESS_PROBE` / `NO_READINESS_PROBE` | `LOW` | Missing health probes |
-| **Secret** | `OLD_OR_STALE_SECRET` | `HIGH` | Secrets created > 30 days ago |
-| **Secret** | `UNREFERENCED_SECRET` | `MEDIUM` | Secrets not referenced by any Pod |
-| **Secret** | `LEGACY_SERVICE_ACCOUNT_TOKEN` | `MEDIUM` | Legacy ServiceAccountToken secret types |
-| **ConfigMap**| `SECRET_LOOKING_DATA` | `HIGH` | ConfigMaps containing sensitive keys/passwords |
-| **ConfigMap**| `UNREFERENCED_CONFIGMAP` | `MEDIUM` | ConfigMaps not referenced by any Pod |
-| **Deployment**| `SINGLE_REPLICA_NO_REDUNDANCY` | `MEDIUM` | Deployment running only 1 replica |
-| **Deployment**| `ROLLING_UPDATE_STRATEGY` | `LOW` | Non-rolling update deployment strategy |
-| **Ingress**| `NO_TLS_CONFIGURED` | `HIGH` | Ingress missing TLS configuration |
-| **Ingress**| `WILDCARD_HOST_CONFIGURED` | `MEDIUM` | Ingress using wildcard hosts |
-| **Namespace**| `NO_DEFAULT_DENY_NETWORK_POLICY` | `HIGH` | Namespace missing default deny network policy |
-| **Namespace**| `NO_RESOURCE_QUOTAS` | `MEDIUM` | Namespace missing ResourceQuota |
-| **Namespace**| `NO_LIMIT_RANGES` | `MEDIUM` | Namespace missing LimitRange |
-| **Node** | `NODE_NOT_READY` | `CRITICAL` | Node in `NotReady` status |
-| **Node** | `DISK_MEMORY_PID_PRESSURE` | `HIGH` | Node reporting disk, memory, or PID pressure |
-| **Node** | `OUTDATED_KUBELET_VERSION` | `LOW` | Outdated Kubelet version |
+| Resource       | Rule ID                                       | Severity   | Description                                                               |
+| -------------- | --------------------------------------------- | ---------- | ------------------------------------------------------------------------- |
+| **Pod**        | `PRIVILEGED_CONTAINER`                        | `HIGH`     | Containers running with privileged access                                 |
+| **Pod**        | `RUNNING_AS_ROOT`                             | `HIGH`     | Containers running as root user (UID 0 or non-root false)                 |
+| **Pod**        | `PRIVILEGE_ESCALATION_ALLOWED`                | `HIGH`     | Containers allowing privilege escalation                                  |
+| **Pod**        | `WRITABLE_ROOT_FILESYSTEM`                    | `HIGH`     | Root filesystem is writable                                               |
+| **Pod**        | `DANGEROUS_CAPABILITIES_KEPT`                 | `HIGH`     | Retaining capabilities like `NET_ADMIN`, `SYS_ADMIN`, etc.                |
+| **Pod**        | `HOST_NAMESPACES_SHARED`                      | `HIGH`     | Pod sharing HostNetwork, HostPID, or HostIPC                              |
+| **Pod**        | `SENSITIVE_HOST_PATH_MOUNTED`                 | `HIGH`     | Mounting sensitive host paths (`/var/run/docker.sock`, `/etc`, `/`, etc.) |
+| **Pod**        | `ENV_VARS_WITH_PLAINTEXT_SECRETS`             | `HIGH`     | Sensitive variable names defined in plaintext                             |
+| **Pod**        | `DEFAULT_SA_AUTO_MOUNTED`                     | `MEDIUM`   | Automounted service account token on default SA                           |
+| **Pod**        | `NO_RESOURCE_LIMITS` / `REQUESTS`             | `MEDIUM`   | Missing resource limits or requests                                       |
+| **Pod**        | `LATEST_IMAGE_TAG`                            | `MEDIUM`   | Container image using `:latest` or missing tag                            |
+| **Pod**        | `NO_SECCOMP_PROFILE` / `NO_APP_ARMOR_PROFILE` | `MEDIUM`   | Missing security profiles                                                 |
+| **Pod**        | `NO_LIVENESS_PROBE` / `NO_READINESS_PROBE`    | `LOW`      | Missing health probes                                                     |
+| **Secret**     | `OLD_OR_STALE_SECRET`                         | `HIGH`     | Secrets created > 30 days ago                                             |
+| **Secret**     | `UNREFERENCED_SECRET`                         | `MEDIUM`   | Secrets not referenced by any Pod                                         |
+| **Secret**     | `LEGACY_SERVICE_ACCOUNT_TOKEN`                | `MEDIUM`   | Legacy ServiceAccountToken secret types                                   |
+| **ConfigMap**  | `SECRET_LOOKING_DATA`                         | `HIGH`     | ConfigMaps containing sensitive keys/passwords                            |
+| **ConfigMap**  | `UNREFERENCED_CONFIGMAP`                      | `MEDIUM`   | ConfigMaps not referenced by any Pod                                      |
+| **Deployment** | `SINGLE_REPLICA_NO_REDUNDANCY`                | `MEDIUM`   | Deployment running only 1 replica                                         |
+| **Deployment** | `ROLLING_UPDATE_STRATEGY`                     | `LOW`      | Non-rolling update deployment strategy                                    |
+| **Ingress**    | `NO_TLS_CONFIGURED`                           | `HIGH`     | Ingress missing TLS configuration                                         |
+| **Ingress**    | `WILDCARD_HOST_CONFIGURED`                    | `MEDIUM`   | Ingress using wildcard hosts                                              |
+| **Namespace**  | `NO_DEFAULT_DENY_NETWORK_POLICY`              | `HIGH`     | Namespace missing default deny network policy                             |
+| **Namespace**  | `NO_RESOURCE_QUOTAS`                          | `MEDIUM`   | Namespace missing ResourceQuota                                           |
+| **Namespace**  | `NO_LIMIT_RANGES`                             | `MEDIUM`   | Namespace missing LimitRange                                              |
+| **Node**       | `NODE_NOT_READY`                              | `CRITICAL` | Node in `NotReady` status                                                 |
+| **Node**       | `DISK_MEMORY_PID_PRESSURE`                    | `HIGH`     | Node reporting disk, memory, or PID pressure                              |
+| **Node**       | `OUTDATED_KUBELET_VERSION`                    | `LOW`      | Outdated Kubelet version                                                  |
 
 ---
 
