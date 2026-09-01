@@ -306,12 +306,7 @@ kubeguard analyze --model phi3 --save
 
 ---
 
-## 🤝 Contributing
+## Screenshots 
+<img width="1882" height="728" alt="Screenshot 2026-09-01 092211" src="https://github.com/user-attachments/assets/7ff38740-5bc7-4b7c-8ca2-21a82334c700" />
+<img width="1918" height="562" alt="Screenshot 2026-09-01 092106" src="https://github.com/user-attachments/assets/f71a6560-0084-4684-9a08-aa017888d67a" />
 
-Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/aifia105/kubeguard/issues).
-
----
-
-## 📜 License
-
-Distributed under the Apache 2.0 License. See [`LICENSE`](LICENSE) for more information.
