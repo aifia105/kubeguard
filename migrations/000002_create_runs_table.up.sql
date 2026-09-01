@@ -7,6 +7,6 @@ CREATE TABLE runs (
     completed_at timestamptz,
     status text NOT NULL CHECK (status IN ('partial_failure', 'success', 'failed')),
     updated_at timestamptz NOT NULL DEFAULT now()
-)
+);
 
 CREATE INDEX idx_runs_cluster_id ON runs(cluster_id, kind, started_at);

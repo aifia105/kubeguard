@@ -2,6 +2,8 @@ package db
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -11,7 +13,7 @@ import (
 type Cluster struct {
 	ID        uuid.UUID `db:"id"`
 	Name      string    `db:"name"`
-	CreatedAt string    `db:"created_at"`
+	CreatedAt time.Time `db:"created_at"`
 }
 
 func InsertCluster(ctx context.Context, pool *pgxpool.Pool, c Cluster) (uuid.UUID, error) {
@@ -46,15 +48,15 @@ func GetClusterByID(ctx context.Context, pool *pgxpool.Pool, id uuid.UUID) (c Cl
 
 func GetOrCreateCluster(ctx context.Context, pool *pgxpool.Pool, name string) (c Cluster, err error) {
 	c, err = GetClusterByName(ctx, pool, name)
-	if err != nil {
+	if err == nil {
+		return c, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
 		return Cluster{}, err
 	}
-	if c.ID == uuid.Nil {
-		c = Cluster{Name: name}
-		c.ID, err = InsertCluster(ctx, pool, c)
-		if err != nil {
-			return Cluster{}, err
-		}
+	newCluster := Cluster{ID: GenerateUUID(), Name: name}
+	if _, err := InsertCluster(ctx, pool, newCluster); err != nil {
+		return Cluster{}, err
 	}
-	return c, nil
+	return newCluster, nil
 }

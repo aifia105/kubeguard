@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -13,8 +14,8 @@ type Runs struct {
 	ClusterID   uuid.UUID `db:"cluster_id"`
 	Kind        string    `db:"kind"`
 	Scope       string    `db:"scope"`
-	StartedAt   string    `db:"started_at"`
-	CompletedAt string    `db:"completed_at"`
+	StartedAt   time.Time `db:"started_at"`
+	CompletedAt time.Time `db:"completed_at"`
 	Status      string    `db:"status"`
 }
 

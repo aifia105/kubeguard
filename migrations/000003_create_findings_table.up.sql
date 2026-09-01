@@ -7,7 +7,7 @@ CREATE TABLE findings (
     rule_id text NOT NULL,
     severity text  NOT NULL CHECK (severity IN ('critical', 'high', 'medium', 'low')),
     description text
-)
+);
 
 CREATE INDEX idx_findings_run_id ON findings(run_id);
 

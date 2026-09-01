@@ -5,4 +5,4 @@ CREATE TABLE diagnoses (
     response_text text NOT NULL,
     evidence_snapshot jsonb NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now()
-)
+);

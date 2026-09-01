@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -15,7 +16,7 @@ type Diagnosis struct {
 	Model            string          `db:"model"`
 	ResponseText     string          `db:"response_text"`
 	EvidenceSnapshot json.RawMessage `db:"evidence_snapshot"`
-	CreatedAt        string          `db:"created_at"`
+	CreatedAt        time.Time       `db:"created_at"`
 }
 
 func InsertDiagnosis(ctx context.Context, pool *pgxpool.Pool, d Diagnosis) (uuid.UUID, error) {

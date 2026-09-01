@@ -8,4 +8,4 @@ CREATE TABLE events (
     message text NOT NULL,
     count integer NOT NULL,
     last_seen_at timestamptz NOT NULL DEFAULT now()
-)
+);

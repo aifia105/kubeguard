@@ -11,7 +11,7 @@ import (
 func ListPodsMetrics(ctx context.Context, mclientset *metricsclientset.Clientset, namespace string) ([]metricsv1beta1.PodMetrics, error) {
 	podsMetrics, err := mclientset.MetricsV1beta1().PodMetricses(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, HandleScanError("Pods Metrics", err)
 	}
 
 	return podsMetrics.Items, nil
