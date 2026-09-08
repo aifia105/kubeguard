@@ -17,6 +17,7 @@
 - **Evidence Snapshot Engine (`diagnose`)**: Correlate unhealthy pod statuses, container exit codes, cluster warning events, pod logs, and security audit findings into a structured evidence snapshot (`output/diagnose_results.json`).
 - **Evidence-First AI Diagnosis (`analyze`)**: Feed gathered evidence snapshots directly to Ollama LLMs (e.g. `phi3`, `llama3`) for plain-English explanations and step-by-step resolution advice without cluttering context windows.
 - **PostgreSQL History & Persistence (`db`)**: Store cluster snapshots, audit runs, findings, and LLM diagnoses over time with automated database schema migration support (`golang-migrate`).
+- **OpenSearch Indexing (`search`)**: Create indices (`findings`, `diagnostics`, `events`) and sync findings, diagnostics, and events from PostgreSQL into OpenSearch for fast indexing and search analytics.
 
 ---
 
@@ -73,6 +74,7 @@ Rather than feeding raw, unorganized cluster dumps to an LLM, KubeGuard performs
 - **Kubernetes Client**: `client-go` and `metrics` client
 - **CLI Framework**: `spf13/cobra`
 - **Database**: PostgreSQL (via `pgx/v5`) and schema migrations (`golang-migrate`)
+- **Search Engine**: OpenSearch (via `opensearch-go`)
 - **AI Integration**: Ollama REST API (Llama3, Phi3, etc.)
 
 ---
@@ -121,6 +123,22 @@ export KUBEGUARD_POSTGRES_URL="postgres://user:password@localhost:5432/kubeguard
 Run database migrations:
 ```bash
 kubeguard db migrate-up
+```
+
+### 4. Setup OpenSearch (Optional)
+
+KubeGuard can index findings, diagnostics, and cluster events into OpenSearch.
+
+Set your OpenSearch environment variables:
+```bash
+export KUBEGUARD_OPENSEARCH_URL="http://localhost:9200"
+export KUBEGUARD_OPENSEARCH_USER="admin"
+export KUBEGUARD_OPENSEARCH_PASSWORD="admin"
+```
+
+Initialize the OpenSearch indices (`findings`, `diagnostics`, `events`):
+```bash
+kubeguard search setup
 ```
 
 ---
@@ -283,6 +301,20 @@ kubeguard db migrate-down --steps 1
 
 ---
 
+### `kubeguard search`
+
+Manage and sync OpenSearch indices for cluster findings, diagnostics, and events.
+
+```bash
+# Create OpenSearch indices (findings, diagnostics, events) if they don't exist
+kubeguard search setup
+
+# Sync findings, diagnostics, and events from PostgreSQL into OpenSearch
+kubeguard search index
+```
+
+---
+
 ##  Step-by-Step Workflow Example
 
 A typical end-to-end audit & AI troubleshooting workflow:
@@ -302,6 +334,10 @@ kubeguard diagnose -n production
 
 # 5. Ask the AI engine to analyze the evidence snapshot and recommend fix steps
 kubeguard analyze --model phi3 --save
+
+# 6. Set up OpenSearch indices and sync database records to OpenSearch
+kubeguard search setup
+kubeguard search index
 ```
 
 ---
