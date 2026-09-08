@@ -9,18 +9,18 @@
 
 ---
 
-## 🌟 Key Features
+##  Key Features
 
-- **🔍 Concurrent Resource Scanning (`scan`)**: Build a complete cluster inventory across 15+ resource types (Pods, Nodes, Namespaces, Deployments, Services, ConfigMaps, Ingresses, Secrets, LimitRanges, ResourceQuotas, NetworkPolicies, and Node/Pod Metrics). Secret values are automatically redacted in JSON exports.
-- **🛡️ Deterministic Security Auditing (`audit`)**: Run 20+ automated security rules across 8 resource categories, highlighting vulnerabilities across `CRITICAL`, `HIGH`, `MEDIUM`, and `LOW` severity levels.
-- **📜 Log & Event Aggregation (`logs`)**: Fetch, tail, follow, and search container logs with cross-namespace pod auto-discovery.
-- **🧾 Evidence Snapshot Engine (`diagnose`)**: Correlate unhealthy pod statuses, container exit codes, cluster warning events, pod logs, and security audit findings into a structured evidence snapshot (`output/diagnose_results.json`).
-- **🤖 Evidence-First AI Diagnosis (`analyze`)**: Feed gathered evidence snapshots directly to Ollama LLMs (e.g. `phi3`, `llama3`) for plain-English explanations and step-by-step resolution advice without cluttering context windows.
-- **💾 PostgreSQL History & Persistence (`db`)**: Store cluster snapshots, audit runs, findings, and LLM diagnoses over time with automated database schema migration support (`golang-migrate`).
+- **Concurrent Resource Scanning (`scan`)**: Build a complete cluster inventory across 15+ resource types (Pods, Nodes, Namespaces, Deployments, Services, ConfigMaps, Ingresses, Secrets, LimitRanges, ResourceQuotas, NetworkPolicies, and Node/Pod Metrics). Secret values are automatically redacted in JSON exports.
+- **Deterministic Security Auditing (`audit`)**: Run 20+ automated security rules across 8 resource categories, highlighting vulnerabilities across `CRITICAL`, `HIGH`, `MEDIUM`, and `LOW` severity levels.
+- **Log & Event Aggregation (`logs`)**: Fetch, tail, follow, and search container logs with cross-namespace pod auto-discovery.
+- **Evidence Snapshot Engine (`diagnose`)**: Correlate unhealthy pod statuses, container exit codes, cluster warning events, pod logs, and security audit findings into a structured evidence snapshot (`output/diagnose_results.json`).
+- **Evidence-First AI Diagnosis (`analyze`)**: Feed gathered evidence snapshots directly to Ollama LLMs (e.g. `phi3`, `llama3`) for plain-English explanations and step-by-step resolution advice without cluttering context windows.
+- **PostgreSQL History & Persistence (`db`)**: Store cluster snapshots, audit runs, findings, and LLM diagnoses over time with automated database schema migration support (`golang-migrate`).
 
 ---
 
-## 🏗️ Architecture & Philosophy
+## Architecture & Philosophy
 
 KubeGuard follows an **Evidence-First** approach to Kubernetes diagnostic AI:
 
@@ -67,7 +67,7 @@ Rather than feeding raw, unorganized cluster dumps to an LLM, KubeGuard performs
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Language**: Go 1.21+
 - **Kubernetes Client**: `client-go` and `metrics` client
@@ -77,7 +77,7 @@ Rather than feeding raw, unorganized cluster dumps to an LLM, KubeGuard performs
 
 ---
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 
@@ -125,7 +125,7 @@ kubeguard db migrate-up
 
 ---
 
-## 📖 Command Reference
+## Command Reference
 
 ### Global Flags
 
@@ -283,7 +283,7 @@ kubeguard db migrate-down --steps 1
 
 ---
 
-## ⚡ Step-by-Step Workflow Example
+##  Step-by-Step Workflow Example
 
 A typical end-to-end audit & AI troubleshooting workflow:
 
