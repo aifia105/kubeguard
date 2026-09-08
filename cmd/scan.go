@@ -178,7 +178,9 @@ func printResults(results interface{}, resourceName string) {
 	case "metrics":
 		resourceprinter.PrintNodeMetrics(results.([]metricsv1beta1.NodeMetrics))
 	case "cluster":
-		resourceprinter.PrintClusterInfo(results.(*version.Info))
+		if info, ok := results.(*version.Info); ok && info != nil {
+			resourceprinter.PrintClusterInfo(info)
+		}
 	case "limitranges":
 		resourceprinter.PrintLimitRanges(results.([]v1.LimitRange))
 	case "resourcequotas":
@@ -194,6 +196,7 @@ func runFullScan(namespace string) {
 	logger.LogInfo("Fetching cluster information...")
 	var results scanResults
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 
 	run := func(fn func()) {
 		wg.Add(1)
@@ -208,105 +211,135 @@ func runFullScan(namespace string) {
 		if err != nil {
 			logger.LogError("failed to get cluster info: %v", err)
 		}
+		mu.Lock()
 		results.Cluster = cluster
+		mu.Unlock()
 	})
 	run(func() {
 		nodes, err := collectors.ListNodes(ctx, k8sClient)
 		if err != nil {
 			logger.LogError("failed to list nodes: %v", err)
 		}
+		mu.Lock()
 		results.Nodes = nodes
+		mu.Unlock()
 	})
 	run(func() {
 		namespaces, err := collectors.ListNamespaces(ctx, k8sClient)
 		if err != nil {
 			logger.LogError("failed to list namespaces: %v", err)
 		}
+		mu.Lock()
 		results.Namespaces = namespaces
+		mu.Unlock()
 	})
 	run(func() {
 		pods, err := collectors.ListPods(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list pods: %v", err)
 		}
+		mu.Lock()
 		results.Pods = pods
+		mu.Unlock()
 	})
 	run(func() {
 		events, err := collectors.ListEvents(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list events: %v", err)
 		}
+		mu.Lock()
 		results.Events = events
+		mu.Unlock()
 	})
 	run(func() {
 		deployments, err := collectors.ListDeployments(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list deployments: %v", err)
 		}
+		mu.Lock()
 		results.Deployments = deployments
+		mu.Unlock()
 	})
 	run(func() {
 		secrets, err := collectors.ListSecrets(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list secrets: %v", err)
 		}
+		mu.Lock()
 		results.Secrets = secrets
+		mu.Unlock()
 	})
 	run(func() {
 		services, err := collectors.ListServices(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list services: %v", err)
 		}
+		mu.Lock()
 		results.Services = services
+		mu.Unlock()
 	})
 	run(func() {
 		configmaps, err := collectors.ListConfigMaps(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list configmaps: %v", err)
 		}
+		mu.Lock()
 		results.ConfigMaps = configmaps
+		mu.Unlock()
 	})
 	run(func() {
 		ingresses, err := collectors.ListIngresses(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list ingresses: %v", err)
 		}
+		mu.Lock()
 		results.Ingresses = ingresses
+		mu.Unlock()
 	})
 	run(func() {
 		nodesMetrics, err := collectors.NodesMetrics(ctx, mclientset)
 		if err != nil {
 			logger.LogError("failed to list node metrics: %v", err)
 		}
+		mu.Lock()
 		results.NodesMetrics = nodesMetrics
+		mu.Unlock()
 	})
 	run(func() {
 		limitRanges, err := collectors.ListLimitRanges(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list limit ranges: %v", err)
 		}
+		mu.Lock()
 		results.LimitRanges = limitRanges
+		mu.Unlock()
 	})
 	run(func() {
 		resourceQuotas, err := collectors.ListResourceQuotas(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list resource quotas: %v", err)
 		}
+		mu.Lock()
 		results.ResourceQuotas = resourceQuotas
+		mu.Unlock()
 	})
 	run(func() {
 		networkPolicies, err := collectors.ListNetworkPolicies(ctx, k8sClient, namespace)
 		if err != nil {
 			logger.LogError("failed to list network policies: %v", err)
 		}
+		mu.Lock()
 		results.NetworkPolicies = networkPolicies
+		mu.Unlock()
 	})
 	run(func() {
 		podsMetrics, err := collectors.ListPodsMetrics(ctx, mclientset, namespace)
 		if err != nil {
 			logger.LogError("failed to list pod metrics: %v", err)
 		}
+		mu.Lock()
 		results.PodsMetrics = podsMetrics
+		mu.Unlock()
 	})
 
 	wg.Wait()

@@ -36,7 +36,7 @@ func IndexFinding(ctx context.Context, pool *pgxpool.Pool) error {
 		buf.WriteString("\n")
 	}
 
-	if buf.Len() > 0 {
+	if buf.Len() == 0 {
 		return nil
 	}
 

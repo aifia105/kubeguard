@@ -74,8 +74,9 @@ func persistScan(scope string, results scanResults) {
 		data, _ := json.Marshal(pod)
 		persistScanResource(runID, "Pod", pod.Namespace, pod.Name, data)
 	}
-	for _, secret := range results.Secrets {
-		data, _ := json.Marshal(redactSecrets(results.Secrets))
+	redactedSecrets := redactSecrets(results.Secrets)
+	for i, secret := range results.Secrets {
+		data, _ := json.Marshal(redactedSecrets[i])
 		persistScanResource(runID, "Secret", secret.Namespace, secret.Name, data)
 	}
 
