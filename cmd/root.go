@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 
+	opensearch "github.com/aifia105/kubeguard/openSearch"
 	"github.com/aifia105/kubeguard/pkg/db"
 	"github.com/aifia105/kubeguard/pkg/k8sclient"
 	"github.com/aifia105/kubeguard/pkg/logger"
@@ -37,6 +38,10 @@ var rootCmd = &cobra.Command{
 		}
 		if err := db.InitPool(ctx); err != nil {
 			logger.LogWarning("database unavailable, results will not be persisted: %v", err)
+		}
+
+		if err := opensearch.InitOpenSearch(ctx); err != nil {
+			logger.LogWarning("opensearch unavailable: %v", err)
 		}
 
 		if db.Pool != nil {
@@ -78,6 +83,8 @@ func init() {
 	rootCmd.AddCommand(auditCmd)
 	rootCmd.AddCommand(diagnoseCmd)
 	rootCmd.AddCommand(analyzeCmd)
+	rootCmd.AddCommand(dbCmd)
+	rootCmd.AddCommand(searchCmd)
 }
 
 func resolveNamespace(args []string) string {
