@@ -311,6 +311,10 @@ kubeguard search setup
 
 # Sync findings, diagnostics, and events from PostgreSQL into OpenSearch
 kubeguard search index
+
+# Query findings in OpenSearch by term, namespace, and result limit
+kubeguard search query "privileged" --index findings --namespace production --limit 20
+
 ```
 
 ---
@@ -338,6 +342,7 @@ kubeguard analyze --model phi3 --save
 # 6. Set up OpenSearch indices and sync database records to OpenSearch
 kubeguard search setup
 kubeguard search index
+kubeguard search query "privileged" --index findings --namespace production --limit 20
 ```
 
 ---

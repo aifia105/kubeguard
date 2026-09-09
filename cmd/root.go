@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	opensearch "github.com/aifia105/kubeguard/openSearch"
+	"github.com/aifia105/kubeguard/opensearch"
 	"github.com/aifia105/kubeguard/pkg/db"
 	"github.com/aifia105/kubeguard/pkg/k8sclient"
 	"github.com/aifia105/kubeguard/pkg/logger"
@@ -76,8 +76,8 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&namespaceFlag, "namespace", "n", "", "limit scan to a single namespace (default: whole cluster)")
-	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "text", "Output format: text or json")
-	rootCmd.PersistentFlags().BoolVar(&noSaveFlag, "no-save", false, "skip persisting results to the database")
+	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "text", "Output format: text or json (default: text)")
+	rootCmd.PersistentFlags().BoolVar(&noSaveFlag, "no-save", false, "skip persisting results to the database (default: false)")
 	rootCmd.AddCommand(scanCmd)
 	rootCmd.AddCommand(logsCmd)
 	rootCmd.AddCommand(auditCmd)
