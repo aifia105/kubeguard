@@ -31,6 +31,12 @@ func queryBuilder(term string, filters map[string]string, index string) (json.Ra
 						"message": term,
 					},
 				})
+			default:
+				clauses = append(clauses, map[string]interface{}{
+					"match": map[string]interface{}{
+						"description": term,
+					},
+				})
 			}
 		}
 	}

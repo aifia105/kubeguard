@@ -12,15 +12,17 @@ func CreateIndexIfNotExists(ctx context.Context, indexName string, mappings json
 	if err != nil {
 		return err
 	}
+	fmt.Printf("DEBUG: index %q exists check returned status %d\n", indexName, exists.StatusCode)
+
 	if exists.StatusCode == 404 {
-		_, err = Client.Indices.Create(indexName, Client.Indices.Create.WithBody(strings.NewReader(string(mappings))), Client.Indices.Create.WithContext(ctx))
+		res, err := Client.Indices.Create(indexName, Client.Indices.Create.WithBody(strings.NewReader(string(mappings))), Client.Indices.Create.WithContext(ctx))
 		if err != nil {
 			return err
 		}
+		fmt.Printf("DEBUG: create %q returned status %d, isError=%v\n", indexName, res.StatusCode, res.IsError())
 	}
 	return nil
 }
-
 func EnsureAllIndicesExist(ctx context.Context) error {
 	if err := CreateIndexIfNotExists(ctx, "findings", json.RawMessage(mappings)); err != nil {
 		return fmt.Errorf("failed to create findings index: %w", err)
