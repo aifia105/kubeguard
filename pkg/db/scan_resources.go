@@ -10,12 +10,12 @@ import (
 )
 
 type Scan_resources struct {
-	ID        uuid.UUID       `db:"id"`
-	RunID     uuid.UUID       `db:"run_id"`
-	Kind      string          `db:"kind"`
-	Name      string          `db:"name"`
-	Namespace string          `db:"namespace"`
-	Data      json.RawMessage `db:"data"`
+	ID        uuid.UUID       `db:"id" json:"id"`
+	RunID     uuid.UUID       `db:"run_id" json:"run_id"`
+	Kind      string          `db:"kind" json:"kind"`
+	Name      string          `db:"name" json:"name"`
+	Namespace string          `db:"namespace" json:"namespace"`
+	Data      json.RawMessage `db:"data" json:"-"`
 }
 
 func InsertScanResource(ctx context.Context, pool *pgxpool.Pool, s Scan_resources) (uuid.UUID, error) {

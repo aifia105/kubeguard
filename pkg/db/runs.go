@@ -10,13 +10,13 @@ import (
 )
 
 type Runs struct {
-	ID          uuid.UUID `db:"id"`
-	ClusterID   uuid.UUID `db:"cluster_id"`
-	Kind        string    `db:"kind"`
-	Scope       string    `db:"scope"`
-	StartedAt   time.Time `db:"started_at"`
-	CompletedAt time.Time `db:"completed_at"`
-	Status      string    `db:"status"`
+	ID          uuid.UUID `db:"id" json:"id"`
+	ClusterID   uuid.UUID `db:"cluster_id" json:"cluster_id"`
+	Kind        string    `db:"kind" json:"kind"`
+	Scope       string    `db:"scope" json:"scope"`
+	StartedAt   time.Time `db:"started_at" json:"started_at"`
+	CompletedAt time.Time `db:"completed_at" json:"completed_at"`
+	Status      string    `db:"status" json:"status"`
 }
 
 func InsertRun(ctx context.Context, pool *pgxpool.Pool, r Runs) (uuid.UUID, error) {

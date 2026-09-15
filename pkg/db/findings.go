@@ -10,14 +10,14 @@ import (
 )
 
 type Finding struct {
-	ID          uuid.UUID `db:"id"`
-	RunID       uuid.UUID `db:"run_id"`
-	Namespace   string    `db:"namespace"`
-	Name        string    `db:"name"`
-	Resource    string    `db:"resource"`
-	RuleID      string    `db:"rule_id"`
-	Severity    string    `db:"severity"`
-	Description string    `db:"description"`
+	ID          uuid.UUID `db:"id" json:"id"`
+	RunID       uuid.UUID `db:"run_id" json:"run_id"`
+	Namespace   string    `db:"namespace" json:"namespace"`
+	Name        string    `db:"name" json:"name"`
+	Resource    string    `db:"resource" json:"resource"`
+	RuleID      string    `db:"rule_id" json:"rule_id"`
+	Severity    string    `db:"severity" json:"severity"`
+	Description string    `db:"description" json:"description"`
 }
 
 func InsertFinding(ctx context.Context, pool *pgxpool.Pool, f Finding) (uuid.UUID, error) {

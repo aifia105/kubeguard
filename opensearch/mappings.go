@@ -1,6 +1,7 @@
 package opensearch
 
 var mappings = ` {
+    "mappings": {
     "properties": {
       "id": { "type": "keyword" },
       "run_id": { "type": "keyword" },
@@ -13,10 +14,11 @@ var mappings = ` {
       "description": { "type": "text" },
       "started_at": { "type": "date" },
 	    "cluster_name": { "type": "keyword" }
-    }
+    }}
 }`
 
 var diagnosticsMappings = `{
+    "mappings": {
     "properties": {
       "id": { "type": "keyword" },
       "run_id": { "type": "keyword" },
@@ -24,11 +26,12 @@ var diagnosticsMappings = `{
       "model": { "type": "keyword" },
       "response_text": { "type": "text" },
       "created_at": { "type": "date" }
-    }
+    }}
 }`
 
 var eventsMappings = `{
-	"properties": {
+    "mappings": {
+    "properties": {
 	  "id": { "type": "keyword" },
 	  "run_id": { "type": "keyword" },
 	  "namespace": { "type": "keyword" },
@@ -38,5 +41,5 @@ var eventsMappings = `{
 	  "message": { "type": "text" },
 	  "count": { "type": "integer" },
 	  "last_seen": { "type": "date" }
-	}
+	}}
 }`

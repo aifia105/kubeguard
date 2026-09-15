@@ -9,15 +9,15 @@ import (
 )
 
 type Event struct {
-	ID        uuid.UUID `db:"id"`
-	RunID     uuid.UUID `db:"run_id"`
-	Namespace string    `db:"namespace"`
-	Object    string    `db:"object"`
-	Type      string    `db:"type"`
-	Reason    string    `db:"reason"`
-	Message   string    `db:"message"`
-	Count     int32     `db:"count"`
-	LastSeen  string    `db:"last_seen"`
+	ID        uuid.UUID `db:"id" json:"id"`
+	RunID     uuid.UUID `db:"run_id" json:"run_id"`
+	Namespace string    `db:"namespace" json:"namespace"`
+	Object    string    `db:"object" json:"object"`
+	Type      string    `db:"type" json:"type"`
+	Reason    string    `db:"reason" json:"reason"`
+	Message   string    `db:"message" json:"message"`
+	Count     int32     `db:"count" json:"count"`
+	LastSeen  string    `db:"last_seen" json:"last_seen"`
 }
 
 func InsertEvent(ctx context.Context, pool *pgxpool.Pool, e Event) (uuid.UUID, error) {

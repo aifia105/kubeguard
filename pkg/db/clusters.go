@@ -11,9 +11,9 @@ import (
 )
 
 type Cluster struct {
-	ID        uuid.UUID `db:"id"`
-	Name      string    `db:"name"`
-	CreatedAt time.Time `db:"created_at"`
+	ID        uuid.UUID `db:"id" json:"id"`
+	Name      string    `db:"name" json:"name"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }
 
 func InsertCluster(ctx context.Context, pool *pgxpool.Pool, c Cluster) (uuid.UUID, error) {

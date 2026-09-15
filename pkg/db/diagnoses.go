@@ -11,12 +11,12 @@ import (
 )
 
 type Diagnosis struct {
-	ID               uuid.UUID       `db:"id"`
-	RunID            uuid.UUID       `db:"run_id"`
-	Model            string          `db:"model"`
-	ResponseText     string          `db:"response_text"`
-	EvidenceSnapshot json.RawMessage `db:"evidence_snapshot"`
-	CreatedAt        time.Time       `db:"created_at"`
+	ID               uuid.UUID       `db:"id" json:"id"`
+	RunID            uuid.UUID       `db:"run_id" json:"run_id"`
+	Model            string          `db:"model" json:"model"`
+	ResponseText     string          `db:"response_text" json:"response_text"`
+	EvidenceSnapshot json.RawMessage `db:"evidence_snapshot" json:"-"`
+	CreatedAt        time.Time       `db:"created_at" json:"created_at"`
 }
 
 func InsertDiagnosis(ctx context.Context, pool *pgxpool.Pool, d Diagnosis) (uuid.UUID, error) {
