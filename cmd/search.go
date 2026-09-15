@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/aifia105/kubeguard/opensearch"
 	"github.com/aifia105/kubeguard/pkg/audit"
@@ -88,7 +89,7 @@ var searchQueryCmd = &cobra.Command{
 
 		filters := map[string]string{}
 		if searchSeverityFlag != "" {
-			filters["severity"] = searchSeverityFlag
+			filters["severity"] = strings.ToLower(searchSeverityFlag)
 		}
 		if searchNamespaceFlag != "" {
 			filters["namespace"] = searchNamespaceFlag
