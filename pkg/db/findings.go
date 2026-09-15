@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -21,6 +22,7 @@ type Finding struct {
 
 func InsertFinding(ctx context.Context, pool *pgxpool.Pool, f Finding) (uuid.UUID, error) {
 	f.ID = GenerateUUID()
+	f.Severity = strings.ToLower(f.Severity)
 	_, err := pool.Exec(ctx, "INSERT INTO findings (id, run_id, namespace, name, resource, rule_id, severity, description) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", f.ID, f.RunID, f.Namespace, f.Name, f.Resource, f.RuleID, f.Severity, f.Description)
 	return f.ID, err
 }
