@@ -17,7 +17,7 @@ func InitPool(ctx context.Context) error {
 		return fmt.Errorf("KUBEGUARD_POSTGRES_URL environment variable is not set")
 	}
 
-	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	pool, err := pgxpool.New(ctx, connString)

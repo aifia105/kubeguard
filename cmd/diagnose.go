@@ -55,8 +55,6 @@ func RunDiagnose(namespace string) {
 
 	snapshot := evidence.BuildSnapshot(ctx, k8sClient, mclientset, runID, namespace, clusterName, findings, pods, events)
 
-	persistRun(runID, "diagnose", namespace, findings)
-
 	if outputFlag == "json" {
 		path := "output/diagnose_results.json"
 		if err := jsonoutput.Write(path, snapshot); err != nil {

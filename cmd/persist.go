@@ -37,17 +37,6 @@ func toDBEvent(runID uuid.UUID, e evidence.Event) db.Event {
 	}
 }
 
-func toDBDiagnosis(runID uuid.UUID, d db.Diagnosis) db.Diagnosis {
-	return db.Diagnosis{
-		ID:               db.GenerateUUID(),
-		RunID:            runID,
-		Model:            d.Model,
-		ResponseText:     d.ResponseText,
-		EvidenceSnapshot: d.EvidenceSnapshot,
-		CreatedAt:        d.CreatedAt,
-	}
-}
-
 func persistRun(runID uuid.UUID, kind, scope string, findings []audit.Finding) {
 	if noSaveFlag || db.Pool == nil || clusterID == uuid.Nil {
 		return
@@ -69,10 +58,6 @@ func persistRun(runID uuid.UUID, kind, scope string, findings []audit.Finding) {
 			logger.LogWarning("failed to save finding: %v", err)
 		}
 	}
-}
-
-func persistDiagnosis(runID uuid.UUID, diagnosis db.Diagnosis) db.Diagnosis {
-	return toDBDiagnosis(runID, diagnosis)
 }
 
 func persistEvents(runID uuid.UUID, events []evidence.Event) {

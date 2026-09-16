@@ -80,9 +80,12 @@ func runAnalyze() {
 			logger.LogWarning("database schema not initialized; results will not be saved. Run: kubeguard db migrate")
 			return
 		}
+		if db.IsForeignKeyViolation(err) {
+			logger.LogWarning("the run this diagnosis belongs to was never saved (database was likely unavailable during `diagnose`) — re-run `kubeguard diagnose` with the database reachable, then `analyze --save` again")
+			return
+		}
 		logger.LogWarning("failed to save run to database: %v", err)
 		return
 	}
-	persistDiagnosis(snap.RunID, diagnosis)
 
 }

@@ -6,6 +6,7 @@ import (
 	"os/signal"
 
 	"github.com/aifia105/kubeguard/opensearch"
+	"github.com/aifia105/kubeguard/pkg/config"
 	"github.com/aifia105/kubeguard/pkg/db"
 	"github.com/aifia105/kubeguard/pkg/k8sclient"
 	"github.com/aifia105/kubeguard/pkg/logger"
@@ -58,6 +59,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
+	config.LoadEnvFile()
 	var cancel context.CancelFunc
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()

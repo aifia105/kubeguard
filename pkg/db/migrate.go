@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"os"
 
+	kubeguardmigrations "github.com/aifia105/kubeguard/migrations"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-const migrationPath = "file://migrations"
 const undefinedTableCode = "42P01"
 const foreignKeyViolationCode = "23503"
 
@@ -35,9 +35,13 @@ func openMigrator() (*migrate.Migrate, *sql.DB, error) {
 		return nil, nil, fmt.Errorf("failed to create driver: %w", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(
-		migrationPath,
-		"postgres", driver)
+	sourceDriver, err := iofs.New(kubeguardmigrations.FS, ".")
+	if err != nil {
+		sqlDB.Close()
+		return nil, nil, fmt.Errorf("failed to load embedded migrations: %w", err)
+	}
+
+	m, err := migrate.NewWithInstance("iofs", sourceDriver, "postgres", driver)
 	if err != nil {
 		sqlDB.Close()
 		return nil, nil, fmt.Errorf("failed to create migrator: %w", err)
