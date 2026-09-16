@@ -20,7 +20,9 @@ type Runs struct {
 }
 
 func InsertRun(ctx context.Context, pool *pgxpool.Pool, r Runs) (uuid.UUID, error) {
-	r.ID = GenerateUUID()
+	if r.ID == uuid.Nil {
+		r.ID = GenerateUUID()
+	}
 	_, err := pool.Exec(ctx, "INSERT INTO runs (id, cluster_id, kind, scope, status) VALUES ($1, $2, $3, $4, $5)", r.ID, r.ClusterID, r.Kind, r.Scope, r.Status)
 	return r.ID, err
 }

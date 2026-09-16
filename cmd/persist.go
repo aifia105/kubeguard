@@ -43,8 +43,7 @@ func persistRun(runID uuid.UUID, kind, scope string, findings []audit.Finding) {
 	}
 
 	run := db.Runs{ID: runID, ClusterID: clusterID, Kind: kind, Scope: scope, Status: "success"}
-	runID, err := db.InsertRun(ctx, db.Pool, run)
-	if err != nil {
+	if _, err := db.InsertRun(ctx, db.Pool, run); err != nil {
 		if db.IsSchemaNotExist(err) {
 			logger.LogWarning("database schema not initialized; results will not be saved. Run: kubeguard db migrate")
 			return
@@ -52,6 +51,7 @@ func persistRun(runID uuid.UUID, kind, scope string, findings []audit.Finding) {
 		logger.LogWarning("failed to save run to database: %v", err)
 		return
 	}
+
 	for _, f := range findings {
 		dbFinding := toDBFinding(runID, f)
 		if _, err := db.InsertFinding(ctx, db.Pool, dbFinding); err != nil {
@@ -87,8 +87,7 @@ func persistScan(scope string, results scanResults) {
 		return
 	}
 	run := db.Runs{ID: db.GenerateUUID(), ClusterID: clusterID, Kind: "scan", Scope: scope, Status: "success"}
-	runID, err := db.InsertRun(ctx, db.Pool, run)
-	if err != nil {
+	if _, err := db.InsertRun(ctx, db.Pool, run); err != nil {
 		if db.IsSchemaNotExist(err) {
 			logger.LogWarning("database schema not initialized — run: kubeguard db migrate")
 			return
@@ -99,70 +98,70 @@ func persistScan(scope string, results scanResults) {
 
 	for _, pod := range results.Pods {
 		data, _ := json.Marshal(pod)
-		persistScanResource(runID, "Pod", pod.Namespace, pod.Name, data)
+		persistScanResource(run.ID, "Pod", pod.Namespace, pod.Name, data)
 	}
 	redactedSecrets := redactSecrets(results.Secrets)
 	for i, secret := range results.Secrets {
 		data, _ := json.Marshal(redactedSecrets[i])
-		persistScanResource(runID, "Secret", secret.Namespace, secret.Name, data)
+		persistScanResource(run.ID, "Secret", secret.Namespace, secret.Name, data)
 	}
 
 	for _, configMap := range results.ConfigMaps {
 		data, _ := json.Marshal(configMap)
-		persistScanResource(runID, "ConfigMap", configMap.Namespace, configMap.Name, data)
+		persistScanResource(run.ID, "ConfigMap", configMap.Namespace, configMap.Name, data)
 	}
 
 	for _, service := range results.Services {
 		data, _ := json.Marshal(service)
-		persistScanResource(runID, "Service", service.Namespace, service.Name, data)
+		persistScanResource(run.ID, "Service", service.Namespace, service.Name, data)
 	}
 
 	for _, deployment := range results.Deployments {
 		data, _ := json.Marshal(deployment)
-		persistScanResource(runID, "Deployment", deployment.Namespace, deployment.Name, data)
+		persistScanResource(run.ID, "Deployment", deployment.Namespace, deployment.Name, data)
 	}
 
 	for _, event := range results.Events {
 		data, _ := json.Marshal(event)
-		persistScanResource(runID, "Event", event.Namespace, event.Name, data)
+		persistScanResource(run.ID, "Event", event.Namespace, event.Name, data)
 	}
 
 	for _, ingress := range results.Ingresses {
 		data, _ := json.Marshal(ingress)
-		persistScanResource(runID, "Ingress", ingress.Namespace, ingress.Name, data)
+		persistScanResource(run.ID, "Ingress", ingress.Namespace, ingress.Name, data)
 	}
 
 	for _, limitRange := range results.LimitRanges {
 		data, _ := json.Marshal(limitRange)
-		persistScanResource(runID, "LimitRange", limitRange.Namespace, limitRange.Name, data)
+		persistScanResource(run.ID, "LimitRange", limitRange.Namespace, limitRange.Name, data)
 	}
 	for _, resourceQuota := range results.ResourceQuotas {
 		data, _ := json.Marshal(resourceQuota)
-		persistScanResource(runID, "ResourceQuota", resourceQuota.Namespace, resourceQuota.Name, data)
+		persistScanResource(run.ID, "ResourceQuota", resourceQuota.Namespace, resourceQuota.Name, data)
 	}
 	for _, namespace := range results.Namespaces {
 		data, _ := json.Marshal(namespace)
-		persistScanResource(runID, "Namespace", namespace.Name, namespace.Name, data)
+		persistScanResource(run.ID, "Namespace", namespace.Name, namespace.Name, data)
 	}
 
 	for _, node := range results.Nodes {
 		data, _ := json.Marshal(node)
-		persistScanResource(runID, "Node", "", node.Name, data)
+		persistScanResource(run.ID, "Node", "", node.Name, data)
 	}
 
 	for _, networkPolicy := range results.NetworkPolicies {
 		data, _ := json.Marshal(networkPolicy)
-		persistScanResource(runID, "NetworkPolicy", networkPolicy.Namespace, networkPolicy.Name, data)
+		persistScanResource(run.ID, "NetworkPolicy", networkPolicy.Namespace, networkPolicy.Name, data)
 	}
 
 	for _, nodeMetrics := range results.NodesMetrics {
 		data, _ := json.Marshal(nodeMetrics)
-		persistScanResource(runID, "NodeMetrics", "", nodeMetrics.Name, data)
+		persistScanResource(run.ID, "NodeMetrics", "", nodeMetrics.Name, data)
 	}
 
 	for _, podMetrics := range results.PodsMetrics {
 		data, _ := json.Marshal(podMetrics)
-		persistScanResource(runID, "PodMetrics", podMetrics.Namespace, podMetrics.Name, data)
+		persistScanResource(run.ID, "PodMetrics", podMetrics.Namespace, podMetrics.Name, data)
 	}
 
 }
