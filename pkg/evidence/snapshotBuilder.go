@@ -225,6 +225,10 @@ func buildEventsContext(events []corev1.Event) []Event {
 	return result
 }
 
+func FilterWarningsEvents(events []corev1.Event) []Event {
+	return buildEventsContext(events)
+}
+
 func collectLogs(ctx context.Context, clientset *kubernetes.Clientset, pods []corev1.Pod, tailLines int64) []LogExcerpt {
 	var out []LogExcerpt
 	for _, pod := range pods {

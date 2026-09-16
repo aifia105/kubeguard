@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -17,11 +18,12 @@ type Event struct {
 	Reason    string    `db:"reason" json:"reason"`
 	Message   string    `db:"message" json:"message"`
 	Count     int32     `db:"count" json:"count"`
-	LastSeen  string    `db:"last_seen" json:"last_seen"`
+	LastSeen  time.Time `db:"last_seen" json:"last_seen"`
 }
 
 func InsertEvent(ctx context.Context, pool *pgxpool.Pool, e Event) (uuid.UUID, error) {
 	e.ID = GenerateUUID()
+	e.LastSeen = time.Now()
 	_, err := pool.Exec(ctx, "INSERT INTO events (id, run_id, namespace, object, type, reason, message, count) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", e.ID, e.RunID, e.Namespace, e.Object, e.Type, e.Reason, e.Message, e.Count)
 	return e.ID, err
 }

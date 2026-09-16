@@ -21,6 +21,7 @@ type Diagnosis struct {
 
 func InsertDiagnosis(ctx context.Context, pool *pgxpool.Pool, d Diagnosis) (uuid.UUID, error) {
 	d.ID = GenerateUUID()
+	d.CreatedAt = time.Now()
 	_, err := pool.Exec(ctx, "INSERT INTO diagnoses (id, run_id, model, response_text, evidence_snapshot) VALUES ($1, $2, $3, $4, $5)", d.ID, d.RunID, d.Model, d.ResponseText, d.EvidenceSnapshot)
 	return d.ID, err
 }

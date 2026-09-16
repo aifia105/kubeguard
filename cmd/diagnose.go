@@ -42,7 +42,8 @@ func RunDiagnose(namespace string) {
 	if err != nil {
 		logger.LogError("Error occurred while listing events: %v", err)
 	}
-
+	warningEvents := evidence.FilterWarningsEvents(events)
+	persistEvents(runID, warningEvents)
 	logger.LogInfo("Fetching recent logs for unhealthy pods...")
 	cluster, err := collectors.ClusterInfo(k8sClient)
 	clusterName := ""

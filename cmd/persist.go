@@ -5,6 +5,7 @@ import (
 
 	"github.com/aifia105/kubeguard/pkg/audit"
 	"github.com/aifia105/kubeguard/pkg/db"
+	"github.com/aifia105/kubeguard/pkg/evidence"
 	"github.com/aifia105/kubeguard/pkg/logger"
 	"github.com/google/uuid"
 )
@@ -19,6 +20,31 @@ func toDBFinding(runID uuid.UUID, f audit.Finding) db.Finding {
 		RuleID:      f.RuleID,
 		Severity:    string(f.Severity),
 		Description: f.Description,
+	}
+}
+
+func toDBEvent(runID uuid.UUID, e evidence.Event) db.Event {
+	return db.Event{
+		ID:        db.GenerateUUID(),
+		RunID:     runID,
+		Namespace: e.Namespace,
+		Object:    e.Object,
+		Type:      e.Type,
+		Reason:    e.Reason,
+		Message:   e.Message,
+		Count:     e.Count,
+		LastSeen:  e.LastSeen,
+	}
+}
+
+func toDBDiagnosis(runID uuid.UUID, d db.Diagnosis) db.Diagnosis {
+	return db.Diagnosis{
+		ID:               db.GenerateUUID(),
+		RunID:            runID,
+		Model:            d.Model,
+		ResponseText:     d.ResponseText,
+		EvidenceSnapshot: d.EvidenceSnapshot,
+		CreatedAt:        d.CreatedAt,
 	}
 }
 
@@ -41,6 +67,22 @@ func persistRun(runID uuid.UUID, kind, scope string, findings []audit.Finding) {
 		dbFinding := toDBFinding(runID, f)
 		if _, err := db.InsertFinding(ctx, db.Pool, dbFinding); err != nil {
 			logger.LogWarning("failed to save finding: %v", err)
+		}
+	}
+}
+
+func persistDiagnosis(runID uuid.UUID, diagnosis db.Diagnosis) db.Diagnosis {
+	return toDBDiagnosis(runID, diagnosis)
+}
+
+func persistEvents(runID uuid.UUID, events []evidence.Event) {
+	if noSaveFlag || db.Pool == nil {
+		return
+	}
+	for _, e := range events {
+		dbEvent := toDBEvent(runID, e)
+		if _, err := db.InsertEvent(ctx, db.Pool, dbEvent); err != nil {
+			logger.LogWarning("failed to save event: %v", err)
 		}
 	}
 }

@@ -74,10 +74,15 @@ func runAnalyze() {
 		ResponseText:     result,
 		EvidenceSnapshot: evidence,
 	}
-	if _, err := db.InsertDiagnosis(ctx, db.Pool, diagnosis); err != nil {
+	_, err = db.InsertDiagnosis(ctx, db.Pool, diagnosis)
+	if err != nil {
 		if db.IsSchemaNotExist(err) {
-			logger.LogWarning("the run this diagnosis belongs to was never saved; re-run kubeguard diagnose with the database available")
+			logger.LogWarning("database schema not initialized; results will not be saved. Run: kubeguard db migrate")
 			return
 		}
+		logger.LogWarning("failed to save run to database: %v", err)
+		return
 	}
+	persistDiagnosis(snap.RunID, diagnosis)
+
 }
