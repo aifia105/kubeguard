@@ -7,5 +7,5 @@ CREATE TABLE events (
     reason text NOT NULL,
     message text NOT NULL,
     count integer NOT NULL,
-    last_seen_at timestamptz NOT NULL DEFAULT now()
+    last_seen timestamptz NOT NULL DEFAULT now()
 );
